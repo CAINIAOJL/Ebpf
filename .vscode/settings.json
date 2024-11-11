@@ -5,6 +5,8 @@
         "bpf_core_read.h": "c",
         "bpf.h": "c",
         "exitssnoops.h": "c",
-        "hardirqs.h": "c"
+        "hardirqs.h": "c",
+        "bpf_common.h": "c",
+        "libbpf.h": "c"
     }
 }
