@@ -2,6 +2,7 @@
 #include <linux/ptrace.h>
 #include <linux/sched.h>
 #include <bpf/bpf_helpers.h>
+#include <asm/types.h>
 //#include "vmlinux.h"
 #define SEC(NAME) __attribute__((section(NAME), used))
 /*

@@ -7,6 +7,12 @@
         "exitssnoops.h": "c",
         "hardirqs.h": "c",
         "bpf_common.h": "c",
-        "libbpf.h": "c"
+        "libbpf.h": "c",
+        "sched.h": "c",
+        "types.h": "c",
+        "int-ll64.h": "c",
+        "bits.bpf.h": "c",
+        "tcprtt.h": "c",
+        "if_ether.h": "c"
     }
 }
