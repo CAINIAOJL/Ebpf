@@ -7,18 +7,18 @@ sudo apt install -y clang llvm libbpf-dev linux-headers-$(uname -r) bpftool
 
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
-
+#include <linux/types.h> 
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, u64);
+    __type(key, __u32);
+    __type(value, __u64);
 } syscall_count SEC(".maps");
 
 SEC("tracepoint/syscalls/sys_enter")
 int bpf_prog(void *ctx) {
-    u32 key = 0;
-    u64 *value;
+    __u32 key = 0;
+    __u64 *value;
 
     value = bpf_map_lookup_elem(&syscall_count, &key);
     if (value) {
