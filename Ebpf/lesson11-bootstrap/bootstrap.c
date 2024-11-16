@@ -163,7 +163,7 @@ cleanup:
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include "bootstrap.h"
-#include "bootstrap.skel.h"
+#include "bootstra.skel.h"
 
 static struct env {
     bool verbose;

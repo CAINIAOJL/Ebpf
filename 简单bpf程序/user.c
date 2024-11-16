@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
 #include <unistd.h>
@@ -44,7 +44,7 @@ int main() {
 //bpftool gen skeleton trace.o > trace.skel.h
 
 //gcc -O2 -g -o user user.c -lbpf -lelf -lz
-
+*/
 
 #include <stdio.h>
 #include <unistd.h>
@@ -52,21 +52,22 @@ int main() {
 #include "trace.skel.h"  // 引入生成的骨架头文件
 
 int main() {
-    struct trace_bpf *skel;
+    struct trace *skel;
     int key = 0;
-    u64 count;
+    __u64 count;
 
     // 打开并加载 BPF 骨架
-    skel = trace_bpf__open_and_load();
+    skel = trace__open_and_load();
+    //skel = trace_bpf__open_and_load();
     if (!skel) {
         fprintf(stderr, "Failed to open and load BPF skeleton\n");
         return 1;
     }
 
     // 附加 BPF 程序
-    if (trace_bpf__attach(skel)) {
+    if (trace__attach(skel)) {
         fprintf(stderr, "Failed to attach BPF program\n");
-        trace_bpf__destroy(skel);
+        trace__destroy(skel);
         return 1;
     }
 
@@ -80,6 +81,6 @@ int main() {
     }
 
     // 清理骨架
-    trace_bpf__destroy(skel);
+    trace__destroy(skel);
     return 0;
 }

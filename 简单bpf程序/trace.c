@@ -1,4 +1,4 @@
-#include <linux/bpf.h>
+/*#include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 
 struct {
@@ -25,7 +25,7 @@ char LICENSE[] SEC("license") = "GPL";       // 指定程序许可证
 
 //clang -O2 -g -target bpf -c trace.c -o trace.o
 //bpftool gen skeleton trace.o > trace.skel.h
-
+*/
 
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
@@ -33,14 +33,14 @@ char LICENSE[] SEC("license") = "GPL";       // 指定程序许可证
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, u64);
+    __type(key, __u32);
+    __type(value, __u64);
 } syscall_count_map SEC(".maps");
 
 SEC("tracepoint/syscalls/sys_enter")
 int count_sys_enter(void *ctx) {
-    u32 key = 0;
-    u64 *value;
+    __u32 key = 0;
+    __u64 *value;
 
     value = bpf_map_lookup_elem(&syscall_count_map, &key);
     if (value) {
