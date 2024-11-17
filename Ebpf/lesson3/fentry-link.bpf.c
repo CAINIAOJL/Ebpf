@@ -9,7 +9,7 @@ SEC("fentry/do_unlinkat")
 int BPF_PROG(do_unlinkat, int dfd, struct filename *name)
 {
     pid_t pid;
-
+    //这个函数返回一个64位的无符号整数，其中高32位存储TGID，低32位存储PID。
     pid = bpf_get_current_pid_tgid() >> 32;
     bpf_printk("fentry: pid = %d, filename = %s\n", pid, name->name);
     return 0;

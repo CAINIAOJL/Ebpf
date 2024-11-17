@@ -13,6 +13,10 @@
         "int-ll64.h": "c",
         "bits.bpf.h": "c",
         "tcprtt.h": "c",
-        "if_ether.h": "c"
+        "if_ether.h": "c",
+        "sysinfo.h": "c",
+        "profile.h": "c",
+        "tcpconnlat.h": "c",
+        "btf.h": "c"
     }
 }

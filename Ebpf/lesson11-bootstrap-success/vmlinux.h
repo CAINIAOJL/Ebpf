@@ -1003,7 +1003,7 @@ struct task_struct {
 	int cpuset_mem_spread_rotor;
 	int cpuset_slab_spread_rotor;
 	struct css_set *cgroups;
-	struct list_head cg_list;
+	struct list1_head cg_list;
 	u32 closid;
 	u32 rmid;
 	struct robust_list_head *robust_list;
