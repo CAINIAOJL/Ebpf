@@ -17,6 +17,7 @@
         "sysinfo.h": "c",
         "profile.h": "c",
         "tcpconnlat.h": "c",
-        "btf.h": "c"
+        "btf.h": "c",
+        "vmlinux.h": "c"
     }
 }

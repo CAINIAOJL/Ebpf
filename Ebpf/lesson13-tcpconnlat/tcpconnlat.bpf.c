@@ -1,4 +1,4 @@
-//#include <vmlinux.h>
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -126,17 +126,18 @@ int BPF_PROG(fentry_tcp_rcv_state_process, struct sock* sk) {
     return handle_tcp_rcv_state_process(ctx, sk);
 }
 
-char license[] SEC("license") = "GPL";
+char license[] SEC("license") = "GPL";*/
 
 
-/*
+
 
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2020 Wenbo Zhang
-#include <vmlinux.h>
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_tracing.h>
+//#include <linux/bpf.h>
 #include "tcpconnlat.h"
 
 #define AF_INET    2
@@ -225,7 +226,7 @@ cleanup:
 	return 0;
 }
 
-SEC("kprobe/tcp_v4_connect")
+/*SEC("kprobe/tcp_v4_connect")
 int BPF_KPROBE(tcp_v4_connect, struct sock *sk)
 {
 	return trace_connect(sk);
@@ -241,7 +242,7 @@ SEC("kprobe/tcp_rcv_state_process")
 int BPF_KPROBE(tcp_rcv_state_process, struct sock *sk)
 {
 	return handle_tcp_rcv_state_process(ctx, sk);
-}
+}*/
 
 SEC("fentry/tcp_v4_connect")
 int BPF_PROG(fentry_tcp_v4_connect, struct sock *sk)
@@ -263,4 +264,3 @@ int BPF_PROG(fentry_tcp_rcv_state_process, struct sock *sk)
 
 char LICENSE[] SEC("license") = "GPL";
 
-*/

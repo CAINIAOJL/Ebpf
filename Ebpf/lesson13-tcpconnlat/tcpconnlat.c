@@ -1,5 +1,5 @@
 #include "tcpconnlat.h"
-
+/*
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <bpf/btf.h>
@@ -303,9 +303,9 @@ cleanup:
 
     return err != 0;
 }
+*/
 
 
-/*
 // SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 // Copyright (c) 2020 Wenbo Zhang
 //
@@ -514,7 +514,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
-    struct tcpconnlat_bpf* obj;
+    struct tcpconnlat* obj;
     int err;
 
     err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -524,26 +524,26 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpconnlat_bpf__open();
+    obj = tcpconnlat__open();
     if (!obj) {
         fprintf(stderr, "failed to open BPF object\n");
         return 1;
     }
 
     /* initialize global data (filtering options) */
-    /*obj->rodata->targ_min_us = env.min_us;
+    obj->rodata->targ_min_us = env.min_us;
     obj->rodata->targ_tgid = env.pid;
 
     if (fentry_can_attach("tcp_v4_connect", NULL)) {
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_v4_connect, 0,
-                                       "tcp_v4_connect");
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_v6_connect, 0,
-                                       "tcp_v6_connect");
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_rcv_state_process,
-                                       0, "tcp_rcv_state_process");
-        bpf_program__set_autoload(obj->progs.tcp_v4_connect, false);
-        bpf_program__set_autoload(obj->progs.tcp_v6_connect, false);
-        bpf_program__set_autoload(obj->progs.tcp_rcv_state_process, false);
+        //bpf_program__set_attach_target(obj->progs.fentry_tcp_v4_connect, 0,
+        //                               "tcp_v4_connect");
+        //bpf_program__set_attach_target(obj->progs.fentry_tcp_v6_connect, 0,
+        //                               "tcp_v6_connect");
+        //bpf_program__set_attach_target(obj->progs.fentry_tcp_rcv_state_process,
+        //                               0, "tcp_rcv_state_process");
+        //bpf_program__set_autoload(obj->progs.tcp_v4_connect, false);
+        //bpf_program__set_autoload(obj->progs.tcp_v6_connect, false);
+        //bpf_program__set_autoload(obj->progs.tcp_rcv_state_process, false);
     } else {
         bpf_program__set_autoload(obj->progs.fentry_tcp_v4_connect, false);
         bpf_program__set_autoload(obj->progs.fentry_tcp_v6_connect, false);
@@ -551,13 +551,13 @@ int main(int argc, char** argv) {
                                   false);
     }
 
-    err = tcpconnlat_bpf__load(obj);
+    err = tcpconnlat__load(obj);
     if (err) {
         fprintf(stderr, "failed to load BPF object: %d\n", err);
         goto cleanup;
     }
 
-    err = tcpconnlat_bpf__attach(obj);
+    err = tcpconnlat__attach(obj);
     if (err) {
         goto cleanup;
     }
@@ -570,7 +570,7 @@ int main(int argc, char** argv) {
     }
 
     /* print header */
-    /*if (env.timestamp)
+    if (env.timestamp)
         printf("%-9s ", ("TIME(s)"));
     if (env.lport) {
         printf("%-6s %-12s %-2s %-16s %-6s %-16s %-5s %s\n", "PID", "COMM",
@@ -587,19 +587,19 @@ int main(int argc, char** argv) {
     }
 
     /* main: poll */
-    /*while (!exiting) {
+    while (!exiting) {
         err = perf_buffer__poll(pb, PERF_POLL_TIMEOUT_MS);
         if (err < 0 && err != -EINTR) {
             fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
             goto cleanup;
         }
         /* reset err to return 0 if exiting */
-        /*err = 0;
+        err = 0;
     }
 
 cleanup:
     perf_buffer__free(pb);
-    tcpconnlat_bpf__destroy(obj);
+    tcpconnlat__destroy(obj);
 
     return err != 0;
-}*/
+}
