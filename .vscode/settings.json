@@ -18,6 +18,9 @@
         "profile.h": "c",
         "tcpconnlat.h": "c",
         "btf.h": "c",
-        "vmlinux.h": "c"
+        "vmlinux.h": "c",
+        "zlib.h": "c",
+        "tcpstates.h": "c",
+        "string.h": "c"
     }
 }
