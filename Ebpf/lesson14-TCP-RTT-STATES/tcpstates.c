@@ -1,5 +1,5 @@
-#include "tcpstates.h"
-#include "tcpstates.skel.h"
+//#include "tcpstates.h"
+//#include "tcpstates.skel.h"
 
 #include <argp.h>
 #include <arpa/inet.h>
@@ -15,8 +15,8 @@
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
-
-
+#include "tcpstates.h"
+#include "tcpstates.skel.h"
 #define PERF_BUFFER_PAGES 16   // 16 pages of perf buffer
 #define PERF_POLL_TIMEOUT_MS 100  // 100ms
 #define warn(...) fprintf(stderr, __VA_ARGS__)
@@ -30,7 +30,7 @@ static char* target_sports = NULL; //source-prots 集合
 static char* target_dports = NULL; //dest-ports  集合
 static bool wide_output = false;
 static bool versbose = false;
-static const char* tcp_state[] = {
+static const char* tcp_states[] = {
     [1] = "ESTABLISHED", [2] = "SYN_SENT", [3] = "SYN_RECV",
     [4] = "FIN_WAIT1", [5] = "FIN_WAIT2", [6] = "TIME_WAIT",
     [7] = "CLOSE", [8] = "CLOSE_WAIT", [9] = "LAST_ACK",
@@ -118,7 +118,8 @@ static error_t parse_arg(int key, char* arg, struct argp_state *state) {
         }
         break;
     default:
-        break ARGP_ERR_UNKNOWN;
+        return ARGP_ERR_UNKNOWN;
+        break;
     }
     return 0;
 }
@@ -157,7 +158,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_sz) {
         family = e->family == AF_INET ? 4 : 6;
         printf(
             "%-1611x %-7d %-16s %-2d %-26s %-5d %-26s %-5d %-11s -> %-11s %.3f\n",
-            e->skaddr, e->pid, e->task, saddr, e->sport, daddr, e->dport, tcp_state[e->oldstate], tcp_state[e->newstate], (double)e->delta_us / 1000
+            e->skaddr, e->pid, e->task, saddr, e->sport, daddr, e->dport, tcp_states[e->oldstate], tcp_states[e->newstate], (double)e->delta_us / 1000
         );
     } else {
         printf(
@@ -181,7 +182,7 @@ int main(int argc, char** argv) {
     };
 
     struct perf_buffer *pb = NULL;
-    struct tcpstates* obj;
+    struct tcpstates_bpf* obj;
     int err, port_map_fd;
     short port_num;
     char *port;
@@ -195,7 +196,7 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpstates__open_opts(&open_opts);
+    obj = tcpstates_bpf__open_opts(&open_opts);
     if(!obj) {
         warn("failed to open BPF object\n");
         return 1;
@@ -203,9 +204,9 @@ int main(int argc, char** argv) {
 
     obj->rodata->filter_by_sport = target_sports != NULL;
     obj->rodata->filter_by_dport = target_dports != NULL;
-    onj->rodata->target_family = target_family;
+    obj->rodata->target_family = target_family;
 
-    err = tcpstates__load(obj);
+    err = tcpstates_bpf__load(obj);
     if(err) {
         warn("failed to load BPF object: %d\n", err);
         goto cleanup;
@@ -216,7 +217,7 @@ int main(int argc, char** argv) {
         port = strtok(target_sports, ",");
         while(port) {
             port_num = strtol(port, NULL, 10);
-            bpf_map_update_elem(port_map_fd, &port_num, &port_num, BPF_ANY)
+            bpf_map_update_elem(port_map_fd, &port_num, &port_num, BPF_ANY);
             port = strtok(NULL, ",");
         }
     }
@@ -232,7 +233,7 @@ int main(int argc, char** argv) {
     }
 
 
-    err = tcpstates__attach(obj);
+    err = tcpstates_bpf__attach(obj);
     if(err) {
         warn("failed to attach BPF programs: %d\n", err);
         goto cleanup;
@@ -240,7 +241,7 @@ int main(int argc, char** argv) {
 
     pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES, handle_event, handle_lost_events, NULL, NULL);
     if(!pb) {
-        err = -errno
+        err = -errno;
         warn("failed to open perf buffer: %d\n", err);
         goto cleanup;
     }
@@ -257,7 +258,7 @@ int main(int argc, char** argv) {
     if(wide_output) {
         printf("%-16s %-7s %-16s %-2s %-26s %-5s %-26s %-5s %-11s -> %-11s %s\n",
         "SKADDR", "PID", "COMM", "IP", "LADDR", "LPORT", "RADDR", "RPORT",
-            "OLDSTATE", "NEWSTATE", "MS")
+            "OLDSTATE", "NEWSTATE", "MS");
     } else {
         printf("%-16s %-7s %-10s %-15s %-5s %-15s %-5s %-11s -> %-11s %s\n",
         "SKADDR", "PID", "COMM", "LADDR", "LPORT", "RADDR", "RPORT",
@@ -274,7 +275,7 @@ int main(int argc, char** argv) {
     }
 cleanup:
     perf_buffer__free(pb);
-    tcpstates__destroy(obj);
+    tcpstates_bpf__destroy(obj);
 
     return err != 0;
 }

@@ -21,6 +21,7 @@
         "vmlinux.h": "c",
         "zlib.h": "c",
         "tcpstates.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "tcpstates.skel.h": "c"
     }
 }
