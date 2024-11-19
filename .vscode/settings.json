@@ -22,6 +22,14 @@
         "zlib.h": "c",
         "tcpstates.h": "c",
         "string.h": "c",
-        "tcpstates.skel.h": "c"
+        "tcpstates.skel.h": "c",
+        "chrono": "cpp",
+        "memleak.h": "c",
+        "core.fixes.bpf.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c"
     }
 }
