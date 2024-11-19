@@ -1,0 +1,125 @@
+malloc
+calloc
+realloc
+mmap
+posix_memalign
+aligned_alloc
+memalign
+valloc
+pvalloc
+
+1.malloc
+用法：void* malloc(size_t size);
+功能：分配块
+说明：malloc不会初始化分
+适用场景：需要动态
+
+2.calloc
+用法：void* calloc(size_t num, size_t size);
+功能：分配一个连续的内存，大小为num * size字节，并将所有字节初始化为0。返回指向内存块的指针，若分配失败返回NULL。
+说明：相比之下malloc，calloc会初始化分配的内存块（全部设为0），适用于需要初始化为0的场景。
+适用场景：在分配并初始化为 0 的内存时需要使用calloc。
+
+3.realloc
+用法：void* realloc(void* ptr, size_t size);
+功能：调整已经分配的内存块大小，将内存块大小调整为指定大小。返回调整后的内存块指针。如果分配失败，返回NULL且原指针仍然有效。
+说明：realloc既可以扩展也可以缩小已有内存块大小，扩展时新的内存块内容未初始化。
+适用场景：用于扩展或收缩动态内存块的大小，适合需要动态调整集群或内存块大小的情况。
+
+4.mmap
+用法：void* mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset);
+功能：将文件或设备映射到内存空间，返回映射的内存首地址。
+说明：通常用于内存映射文件，将文件的内容加载到内存中并进行操作，也可以用于匿名分配内存。mmap分配的内存块会在文件关闭时同步写入文件。
+适用场景：常用于文件操作、大数据处理以及需要直接访问文件内容的场景。
+
+5.posix_memalign
+用法：int posix_memalign(void** memptr, size_t alignment, size_t size);
+功能：按照指定坐标分配方式内存，返回指向分配内存的指针。
+说明：alignment参数指定对齐的字节数（必须是2的幂，且是sizeof(void*)的倍数），在某些硬件或应用场景中需要特定的内存对齐方式。
+适用场景：需要特定内存对齐（如SIMD指令优化）的场合。
+
+6.aligned_alloc
+用法：void* aligned_alloc(size_t alignment, size_t size);
+功能：分配内存块，返回指向分配内存块的指针。
+说明：alignment指定曼哈顿字节数（必须是2的幂），size必须是alignment整数倍。C11标准引入，相似posix_memalign，但更简洁。
+适用场景：C11标准程序，且需要分析内存的情况。
+
+7.memalign
+用法：void* memalign(size_t alignment, size_t size);
+功能：分配指定坐标方式的内存块，返回指向分配内存的指针。
+说明：属于GNU扩展，用于指定字节对齐的内存。和posix_memalign类似的，但返回分配的指针而不是通过指针分配指针。
+适用场景：通常仅在GNU环境中使用。
+
+8.valloc
+用法：void* valloc(size_t size);
+功能：页面分配大小（系统内存页）的定位内存块，返回指向分配内存的指针。
+说明：系统内存页通常为4KB或更大，分配的内存会与内存页对齐，适用于要求内存页对齐的应用。
+适用：场景分配内存页，适用于内存页相关的操作，通常在系统编程中使用。
+
+9.pvalloc
+用法：void* pvalloc(size_t size);
+功能：类似于valloc，但会分配足够的页面对齐内存以容纳size字节，并将大小对齐到页面边界。
+说明：即使分配的size不是页面大小的整数倍，也pvalloc保留其扩展到页面大小的整数倍。
+适用场景：在需要分页分配并保证内存分配为页面大小整数倍的场景中使用。
+每个函数根据不同的需求提供灵活的内存管理功能。在选择时，可以根据是否需要扫描、是否需要初始化、是否需要重分配、是否需要直接映射文件内容等具体需求选择合适的函数。
+
+
+
+1..malloc链
+建筑师。malloc请求内存。
+标准库实现（
+系统调用：如果当前内存池brk或sbrk调整程序的数据段大小mmap分
+縮放
+
+malloc -> malloc内部实现 -> brk/sbrk或mmap
+2.calloc链
+应用程序调用calloc请求分配num * size字节并初始化为0。
+标准库实现：calloc通常调用malloc来进行内存分配。
+分配完成后，calloc会初始化内存块为0。
+简化的调用方式：
+
+calloc -> malloc -> brk/sbrk或mmap -> memset
+3.realloc还记得
+应用程序调用realloc请求调整已分配内存块的大小。
+标准库实现：如果原内存块附近有足够的空间，realloc直接扩展或缩小内存块；否则，重新malloc分配新块，并复制原数据。
+如果重新分配了新的内存块，则释放旧的内存块。
+简化的调用方式：
+
+realloc -> malloc或brk/sbrk或mmap -> memcpy（若需要拷贝数据）
+4..mmap链
+应用程序调用mmap请求映射文件或分配内存。
+系统调用：直接进入内核，通过mmap系统调用将文件或设备映射到虚拟内存地址空间。
+简化的调用方式：
+
+mmap -> mmap系统调用
+5.posix_memalign呼叫链
+应用程序调用posix_memalign请求按指定字节分配内存。
+标准库实现：posix_memalign通常调用malloc来分配稍大所需的内存块，以便在返回坐标的指针之前进行坐标调整。
+简化的调用方式：
+
+posix_memalign -> malloc -> brk/sbrk或mmap
+6..aligned_alloc链
+应用程序调用aligned_alloc请求分配内存块。
+标准库实现：aligned_alloc直接调用系统分配函数（如malloc、mmap）并返回扫描的地址。
+简化的调用方式：
+
+aligned_alloc -> malloc或mmap
+7..memalign链
+应用程序调用memalign请求查看内存分配。
+标准库实现：memalign实现与posix_memalign类似，通过调用malloc分配稍大的内存并对齐。
+简化的调用方式：
+
+memalign -> malloc -> brk/sbrk或mmap
+8..valloc链
+应用程序调用valloc请求页面的内存大小。
+标准库实现：valloc通常会调用memalign，使内存与页面大小对齐（例如4KB）。
+简化的调用方式：
+
+valloc -> memalign或mmap
+9..pvalloc链
+应用程序调用pvalloc请求页面大小的内存块数。
+标准库实现：pvalloc类似valloc，分配内存大小是页面大小的倍数，通过mmap或memalign实现。
+简化的调用方式：
+
+pvalloc -> memalign或mmap
+这些调用链中的brk/sbrk和mmap是操作系统提供的低级接口，用于管理进程的内存地址空间。大多数现代内存分配库（如glibc）使用mmap来实现更大的内存块分配。
