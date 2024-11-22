@@ -31,6 +31,8 @@
         "format": "c",
         "initializer_list": "c",
         "span": "c",
-        "biopattern.h": "c"
+        "biopattern.h": "c",
+        "bpf_endian.h": "c",
+        "socket.h": "c"
     }
 }

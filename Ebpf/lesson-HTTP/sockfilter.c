@@ -1,4 +1,4 @@
-#include <argp.h>
+/*#include <argp.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <bpf/libbpf.h>
@@ -13,6 +13,23 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "sockfilter.h"
+#include "sockfilter.skel.h"*/
+
+#include <argp.h>
+#include <arpa/inet.h>
+#include <assert.h>
+#include <bpf/libbpf.h>
+#include <linux/if_packet.h>
+#include <linux/if_ether.h>
+#include <linux/in.h>
+#include <net/if.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #include "sockfilter.h"
 #include "sockfilter.skel.h"
 
@@ -29,7 +46,7 @@ static int open_raw_sock(const char *name) {
 
     memset(&sll, 0, sizeof(sll));
     sll.sll_family = AF_PACKET;
-    sll.sll_ifindex = if_nameindex(name);
+    sll.sll_ifindex = if_nametoindex(name);
     sll.sll_protocol = htons(ETH_P_ALL);
     if(bind(sock, (struct sockaddr*)&sll, sizeof(sll)) < 0) {
         fprintf(stderr, "Failed to bind raw socket: %s\n", strerror(errno));
@@ -39,11 +56,17 @@ static int open_raw_sock(const char *name) {
     return sock;
 }
 
+static inline void ltoa(uint32_t addr, char *dst)
+{
+	snprintf(dst, 16, "%u.%u.%u.%u", (addr >> 24) & 0xFF, (addr >> 16) & 0xFF,
+		 (addr >> 8) & 0xFF, (addr & 0xFF));
+}
+
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args) {
     return vfprintf(stderr, format, args);
 }
 
-static handle_event(void *ctx, void *data, size_t size) {
+static int handle_event(void *ctx, void *data, size_t size) {
     const struct so_event *e = data;
     char ifname[IF_NAMESIZE];
     char sstr[16] = {}, dstr[16] = {};
@@ -61,7 +84,9 @@ static handle_event(void *ctx, void *data, size_t size) {
     }
 
     ltoa(ntohl(e->src_addr), sstr);
-    Itoa(ntohl(e->dst_addr), dstr);
+    ltoa(ntohl(e->dst_addr), dstr);
+    //itoa(ntohl(e->src_addr), sstr);
+	//itoa(ntohl(e->dst_addr), dstr);
 
     printf("%s:%d(src) -> %s:%d(dst)\n", sstr, ntohs(e->port16[0]), dstr, ntohs(e->port16[1]));
     printf("payload: %s\n", e->payload);
@@ -109,7 +134,7 @@ int main(int argc, char** argv) {
     }
 
     prog_fd = bpf_program__fd(skel->progs.socket_handler);
-    if(setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, &prog_fd, sizeof(prog_fd))) {
+    if(setsockopt(sock, SOL_SOCKET, 50, &prog_fd, sizeof(prog_fd))) {
         err = -3;
         fprintf(stderr, "Failed to attach BPF program to socket\n");
         goto cleanup;
