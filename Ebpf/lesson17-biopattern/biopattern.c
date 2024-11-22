@@ -1,4 +1,4 @@
-/*#include <argp.h>
+#include <argp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -23,7 +23,8 @@ static struct env {
 	.times = 99999999,
 };
 
-static volatile bool exiting = false;
+//修改
+static volatile bool exiting;
 
 const char* argp_program_version = "biopattern 1.0";
 const char* argp_program_bug_address = "https://github.com/iovisor/bcc/tree/master/libbpf-tools";
@@ -50,19 +51,19 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state) {
     static int pos_args;
     switch(key) {
         case 'h':
-            //argp_state_help(state, stderr, ARGP_HELP_STD_HELP);
+            argp_state_help(state, stderr, ARGP_HELP_STD_HELP);
             break;
     
         case 'T':
-            //env.timestamp = true;
+            env.timestamp = true;
             break;
         
         case 'v':
-            //env.verbose = true;
+            env.verbose = true;
             break;
         
         case 'd':
-            //env.disk = arg;
+            env.disk = arg;
             if(strlen(arg) + 1 > DISK_NAME_LEN) {
                 fprintf(stderr, "Disk name too long\n");
                 argp_usage(state);
@@ -108,9 +109,9 @@ static void sig_handler(int sig) {
     exiting = true;
 }
 
-static int print_map(struct bpf_map *map, struct partition *partitions) {
+static int print_map(struct bpf_map *counters, struct partition *partitions) {
     __u32 total, lookup_key = -1, next_key;
-    int err, fd = bpf_map__fd(map);
+    int err, fd = bpf_map__fd(counters);
     const struct partition *partition;
     struct counter counter;
     struct tm *tm;
@@ -169,7 +170,7 @@ int main(int argc, char** argv) {
 		    };							    \
 	    })
     */
-    /*LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
     struct partition *partitions = NULL;
     const struct partition *partition;
     static const struct argp argp = {
@@ -232,8 +233,8 @@ int main(int argc, char** argv) {
     }
     printf("%-7s %5s %5s %8s %10s\n", "DISK", "%RND", "%SEQ",
 		"COUNT", "KBYTES");
-
-    while(!exiting) {
+    //修改
+    while(1) {
         sleep(env.interval);
 
         err = print_map(obj->maps.counters, partitions);
@@ -251,9 +252,9 @@ cleanup:
 
     return err != 0;
 }
-*/
 
-#include <argp.h>
+
+/*#include <argp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -437,7 +438,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
-	/* initialize global data (filtering options) */
+	/* initialize global data (filtering options) 
 	if (env.disk) {
 		partition = partitions__get_by_name(partitions, env.disk);
 		if (!partition) {
@@ -469,8 +470,8 @@ int main(int argc, char **argv)
 	printf("%-7s %5s %5s %8s %10s\n", "DISK", "%RND", "%SEQ",
 		"COUNT", "KBYTES");
 
-	/* main: poll */
-	while (1) {
+	 main: poll */
+	/*while (1) {
 		sleep(env.interval);
 
 		err = print_map(obj->maps.counters, partitions);
@@ -486,4 +487,4 @@ cleanup:
 	partitions__free(partitions);
 
 	return err != 0;
-}
+}/*/

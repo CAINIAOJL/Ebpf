@@ -1,4 +1,4 @@
-/*#include "vmlinux.h"
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
@@ -58,9 +58,11 @@ int handle_biock_rq_complete(void *arg) {
     counterp->last_sector = sector + nr_sector;
 
     return 0;
-}*/
+}
+//一定要有标准的license声明
+char LICENSE[] SEC("license") = "GPL";
 
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include "biopattern.h"
@@ -114,4 +116,4 @@ int handle__block_rq_complete(void *args)
 	return 0;
 }
 
-char LICENSE[] SEC("license") = "GPL";
+char LICENSE[] SEC("license") = "GPL";*/
