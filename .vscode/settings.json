@@ -33,6 +33,7 @@
         "span": "c",
         "biopattern.h": "c",
         "bpf_endian.h": "c",
-        "socket.h": "c"
+        "socket.h": "c",
+        "accept.h": "c"
     }
 }
