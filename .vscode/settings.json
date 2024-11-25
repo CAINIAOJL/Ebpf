@@ -39,6 +39,7 @@
         "new": "c",
         "cstdlib": "c",
         "unistd.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "sudoadd.skel.h": "c"
     }
 }
