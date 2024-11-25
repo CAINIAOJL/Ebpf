@@ -1,0 +1,65 @@
+1. etrace （从 etrace snap 包中提供）
+作用：etrace 是用于跟踪 Linux 系统上进程的系统调用和其他事件的工具，通常基于 eBPF 技术。
+用法：etrace <命令>。例如，etrace ls 用于跟踪 ls 命令的系统调用。
+典型功能：分析系统调用频率、时间消耗、I/O 事件等。
+
+
+2. mtrace （来自 libc-devtools 包）
+作用：mtrace 用于跟踪 C 程序中的内存分配和释放操作，帮助检测内存泄漏。
+用法：在程序中调用 mtrace() 和 muntrace()，生成内存分配日志后，使用 mtrace 工具来分析日志：
+bash
+复制代码
+mtrace <program> <trace_log>
+典型功能：用于调试内存分配问题，分析 malloc/free 调用情况。
+
+
+3. xtrace （来自 xtrace 包）
+作用：xtrace 用于跟踪和显示 X11 协议请求，以帮助调试图形界面的 X11 客户端和服务器交互。
+用法：xtrace <命令>。例如，xtrace xclock 会跟踪 xclock 程序的 X11 请求。
+典型功能：用于调试 X11 程序的图形操作，查看具体的 X11 请求和事件。
+
+
+4. potrace （来自 potrace 包）
+作用：potrace 是用于将位图图像转换为矢量图像的工具。
+用法：potrace <input_file> -o <output_file>。例如，potrace image.pbm -o image.svg 将位图转换为 SVG 矢量图。
+典型功能：主要用于图像处理和矢量化，尤其是设计和出版领域。
+
+
+5. dtrace （来自 systemtap-sdt-dev 包）
+作用：dtrace 是动态跟踪工具，主要用于实时监控系统和应用程序的性能。
+用法：使用 dtrace 脚本，例如：
+bash
+复制代码
+dtrace -n 'syscall:::entry { @[execname] = count(); }'
+该命令可以统计系统调用的数量（需系统支持 DTrace）。
+典型功能：分析系统性能、CPU 使用率、磁盘 I/O 等，用于诊断系统级别的问题。
+
+
+6. strace （来自 strace 包）
+作用：strace 用于跟踪进程的系统调用和信号。可以查看系统调用的参数、返回值等，常用于调试和排错。
+用法：strace <命令>。例如，strace ls 跟踪 ls 命令的所有系统调用。
+典型功能：用于调试程序、排查崩溃或异常问题，查看文件 I/O 和网络调用。
+
+
+7. pmtrace （来自 pcp 包）
+作用：pmtrace 是一种性能跟踪工具，用于分析和记录系统性能数据。
+用法：配合 Performance Co-Pilot (PCP) 工具集使用，提供系统性能数据的收集和分析。
+典型功能：主要用于长时间的系统性能监控，特别适合服务器和生产环境中的性能分析。
+
+
+8. ltrace （来自 ltrace 包）
+作用：ltrace 用于跟踪进程中的库函数调用。可以看到调用的动态库函数及其参数，主要用于应用程序层面的调试。
+用法：ltrace <命令>。例如，ltrace ./a.out 跟踪程序 a.out 的库调用。
+典型功能：分析函数调用链、检查动态链接库问题、调试应用程序的内部函数调用。
+
+
+9. btrace （来自 blktrace 包）
+作用：btrace 用于跟踪和记录块设备的 I/O 操作，帮助分析磁盘读写性能。
+用法：btrace <设备>。例如，btrace /dev/sda 跟踪 /dev/sda 的 I/O 操作。
+典型功能：用于存储系统的性能分析和调优，特别是磁盘和存储设备的读写操作分析。
+
+
+10. itrace （来自 irpas 包）
+作用：itrace 是一种网络工具，用于跟踪和分析 IP 数据包在网络中的路径。
+用法：itrace <IP 地址>，例如 itrace 192.168.1.1。
+典型功能：用于网络故障排查和路径跟踪，帮助分析网络中的延迟和数据包传输路径。

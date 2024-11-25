@@ -34,6 +34,11 @@
         "biopattern.h": "c",
         "bpf_endian.h": "c",
         "socket.h": "c",
-        "accept.h": "c"
+        "accept.h": "c",
+        "cmath": "c",
+        "new": "c",
+        "cstdlib": "c",
+        "unistd.h": "c",
+        "fcntl.h": "c"
     }
 }

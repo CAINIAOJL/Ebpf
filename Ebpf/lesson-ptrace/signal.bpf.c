@@ -13,7 +13,7 @@ struct {
     __uint(max_entries, 256 * 1024);
 } rb SEC(".maps");
 
-const volatile int target_ppid = 0;
+const volatile int target_ppid = 0; //用来筛选dump进程的父进程pid，如果为0则表示dump所有进程
 
 //
 SEC("tp/syscalls/sys_enter_ptrace")
