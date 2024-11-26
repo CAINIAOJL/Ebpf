@@ -1,4 +1,4 @@
-#include <argp.h>
+/*#include <argp.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -205,7 +205,7 @@ struct dirent
 //*/
 
 // bash shell stat 命令的输出结果
-int rmtree(const char *path) {
+/*int rmtree(const char *path) {
     size_t path_len;
     char *full_path;
     DIR *dir;
@@ -237,7 +237,7 @@ int rmtree(const char *path) {
         strcpy(full_path, path);
         //连接
         /*"path/entry->d_name"*/
-        strcat(full_path, "/");
+        /*strcat(full_path, "/");
         strcat(full_path, entry->d_name);
 
         stat(full_path, &stat_entry);
@@ -270,7 +270,7 @@ int cleanup_pins() {
 
 int pin_program(struct bpf_porgram *prog, const char *path) {
     int err;
-    err = bpf_obj_pin(prog, path);
+    err = bpf_program__pin(prog, path);
     if(err) {
         fprintf(stderr, "Failed to pin program: %s\n", strerror(errno));
         return err;
@@ -280,7 +280,7 @@ int pin_program(struct bpf_porgram *prog, const char *path) {
 
 int pin_map(struct bpf_map *map, const char *path) {
     int err;
-    err = bpf_obj_pin(map, path);
+    err = bpf_map__pin(map, path);
     if(err) {
         fprintf(stderr, "Failed to pin map: %s\n", strerror(errno));
         return err;
@@ -290,7 +290,7 @@ int pin_map(struct bpf_map *map, const char *path) {
 
 int pin_link(struct bpf_link *link, const char *path) {
     int err;
-    err = bpf_link_pin(link, path);
+    err = bpf_link__pin(link, path);
     if(err) {
         fprintf(stderr, "Failed to pin link: %s\n", strerror(errno));
         return err;
@@ -307,7 +307,7 @@ static int pin_stuff(struct replace2 *skel) {
     char pin_path[100];
 
     // pin maps
-    bpf_object__for_each_map(map, skel->maps) {
+    bpf_object__for_each_map(map, skel->obj) {
         sprintf(pin_path, "%s/map_%02d", base_folder, counter++);
         err = pin_map(map, pin_path);
         if(err) {return err;}
@@ -504,19 +504,19 @@ cleanup:
     }
     return -err;
 }
+*/
 
-/*
 #include <argp.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "textreplace2.skel.h"
-#include "textreplace2.h"
+#include "replace2.skel.h"
+#include "replace2.h"
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <sys/resource.h>
 #include <errno.h>
@@ -784,13 +784,13 @@ int pin_link(struct bpf_link *link, const char* path)
     return err;
 }
 
-static int pin_stuff(struct textreplace2_bpf *skel) {
+static int pin_stuff(struct replace2 *skel) {
     /*
     Sorry in advance for not this function being quite garbage,
     but I tried to keep the code simple to make it easy to read
     and modify
     */
-    /*int err;
+    int err;
     int counter = 0;
     struct bpf_program *prog;
     struct bpf_map *map;
@@ -843,7 +843,7 @@ static int pin_stuff(struct textreplace2_bpf *skel) {
 int main(int argc, char **argv)
 {
     struct ring_buffer *rb = NULL;
-    struct textreplace2_bpf *skel;
+    struct replace2 *skel;
     int err;
     int index;
     // Parse command line arguments
@@ -877,14 +877,14 @@ int main(int argc, char **argv)
     }
 
     // Open BPF application 
-    skel = textreplace2_bpf__open();
+    skel = replace2__open();
     if (!skel) {
         fprintf(stderr, "Failed to open BPF program: %s\n", strerror(errno));
         return 1;
     }
 
     // Verify and load program
-    err = textreplace2_bpf__load(skel);
+    err = replace2__load(skel);
 	if (err) {
 		fprintf(stderr, "Failed to load and verify BPF skeleton\n");
 		goto cleanup;
@@ -958,7 +958,7 @@ int main(int argc, char **argv)
     }
 
     // Attach tracepoint handler 
-    err = textreplace2_bpf__attach(skel);
+    err = replace2__attach(skel);
     if (err) {
         fprintf(stderr, "Failed to attach BPF program: %s\n", strerror(errno));
         goto cleanup;
@@ -990,9 +990,9 @@ int main(int argc, char **argv)
 
         printf("Successfully started!\n");
         while (!exiting) {
-            err = ring_buffer__poll(rb, 100 /* timeout, ms *///);
+            err = ring_buffer__poll(rb, 100 /* timeout, ms */);
             /* Ctrl-C will cause -EINTR */
-            /*if (err == -EINTR) {
+            if (err == -EINTR) {
                 err = 0;
                 break;
             }
@@ -1004,11 +1004,9 @@ int main(int argc, char **argv)
     }
 
 cleanup:
-    textreplace2_bpf__destroy(skel);
+    replace2__destroy(skel);
     if (err != 0) {
         cleanup_pins();
     }
     return -err;
 }
-
-*/

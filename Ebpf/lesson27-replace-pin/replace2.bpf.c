@@ -1,4 +1,5 @@
-#include "vmlinux.h"
+#define __TARGET_ARCH_x86
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -81,7 +82,7 @@ int BPF_PROG(handle_close_exit, const struct pt_regs *regs, long ret) {
 }
 
 SEC("fentry/__x64_sys_openat")
-int BPF_PROG(handle_openat_entry, struct pt_regs *regs) {
+int BPF_PROG(handle_openat_enter, struct pt_regs *regs) {
     size_t pid_tgid = bpf_get_current_pid_tgid();
     int pid = pid_tgid >> 32;
     unsigned int zero = PROG_00;
@@ -352,15 +353,15 @@ int BPF_PROG(overwrite_address, struct pt_regs *regs, long ret) {
     }
     return 0;
 }
+*/
 
 
-/*
 
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
-#include "textreplace2.h"
+#include "replace2.h"
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
@@ -742,4 +743,3 @@ int BPF_PROG(overwrite_addresses, struct pt_regs *regs, long ret)
     return 0;
 }
 
-*/

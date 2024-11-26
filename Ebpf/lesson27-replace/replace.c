@@ -1,3 +1,4 @@
+/*
 #include <argp.h>
 #include <unistd.h>
 #include "replace.skel.h"
@@ -123,7 +124,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state) {
         
         case 't' :
             errno = 0;
-            env.target_ppid = strtol(arg. NULL, 10);
+            env.target_ppid = strtol(arg, NULL, 10);
             if(errno || env.target_ppid <= 0) {
                 fprintf(stderr, "Invalid target PPID: %s\n", arg);
                 argp_usage(state);
@@ -185,12 +186,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    strcnpy(skel->rodata->filename, env.filename, sizeof(skel->rodata->filename));
+    strncpy(skel->rodata->filename, env.filename, sizeof(skel->rodata->filename));
     skel->rodata->filename_len = strlen(env.filename);
     skel->rodata->target_ppid = env.target_ppid;
 
-    strncpy(skel->rodata->input, env.input, sizeof(skel->rodata->text_find));
-    strncpy(skel->rodata->replace, env.replace, sizeof(skel->rodata->text_replace));
+    strncpy(skel->rodata->text_find, env.input, sizeof(skel->rodata->text_find));
+    strncpy(skel->rodata->text_replace, env.replace, sizeof(skel->rodata->text_replace));
 
     skel->rodata->text_len = strlen(env.input);
 
@@ -245,8 +246,9 @@ cleanup:
     replace__destroy(skel);
     return -err;
 }
+*/
 
-/*
+
 // SPDX-License-Identifier: BSD-3-Clause
 #include <argp.h>
 #include <unistd.h>
@@ -412,7 +414,7 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
 int main(int argc, char **argv)
 {
     struct ring_buffer *rb = NULL;
-    struct replace_bpf *skel;
+    struct replace *skel;
     int err;
 
     // Parse command line arguments
@@ -435,7 +437,7 @@ int main(int argc, char **argv)
     }
 
     // Open BPF application 
-    skel = replace_bpf__open();
+    skel = replace__open();
     if (!skel) {
         fprintf(stderr, "Failed to open BPF program: %s\n", strerror(errno));
         return 1;
@@ -451,7 +453,7 @@ int main(int argc, char **argv)
     skel->rodata->text_len = strlen(env.input);
 
     // Verify and load program
-    err = replace_bpf__load(skel);
+    err = replace__load(skel);
 	if (err) {
 		fprintf(stderr, "Failed to load and verify BPF skeleton\n");
 		goto cleanup;
@@ -482,7 +484,7 @@ int main(int argc, char **argv)
     }
 
     // Attach tracepoint handler 
-    err = replace_bpf__attach( skel);
+    err = replace__attach( skel);
     if (err) {
         fprintf(stderr, "Failed to attach BPF program: %s\n", strerror(errno));
         goto cleanup;
@@ -498,9 +500,9 @@ int main(int argc, char **argv)
 
     printf("Successfully started!\n");
     while (!exiting) {
-        err = ring_buffer__poll(rb, 100 /* timeout, ms *///);
+        err = ring_buffer__poll(rb, 100 /* timeout, ms */);
         /* Ctrl-C will cause -EINTR */
-        /*if (err == -EINTR) {
+        if (err == -EINTR) {
             err = 0;
             break;
         }
@@ -511,8 +513,6 @@ int main(int argc, char **argv)
     }
 
 cleanup:
-    replace_bpf__destroy( skel);
+    replace__destroy( skel);
     return -err;
 }
-
-*/

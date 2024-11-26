@@ -1,4 +1,4 @@
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -278,8 +278,8 @@ int overwrite_address(struct trace_event_raw_sys_exit *ctx) {
         bpf_map_delete_elem(&map_to_replace_addrs, &match_counter); 
     }
     return 0; 
-}
-/*
+}*/
+
 // SPDX-License-Identifier: BSD-3-Clause
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
@@ -614,4 +614,3 @@ int overwrite_addresses(struct trace_event_raw_sys_exit *ctx) {
 
     return 0;
 }
-*/
