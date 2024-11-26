@@ -40,6 +40,9 @@
         "cstdlib": "c",
         "unistd.h": "c",
         "fcntl.h": "c",
-        "sudoadd.skel.h": "c"
+        "sudoadd.skel.h": "c",
+        "resource.h": "c",
+        "dirent.h": "c",
+        "replace2.h": "c"
     }
 }

