@@ -43,6 +43,8 @@
         "sudoadd.skel.h": "c",
         "resource.h": "c",
         "dirent.h": "c",
-        "replace2.h": "c"
+        "replace2.h": "c",
+        "bpf_sockmap.h": "c",
+        "sslsbiff.h": "c"
     }
 }
