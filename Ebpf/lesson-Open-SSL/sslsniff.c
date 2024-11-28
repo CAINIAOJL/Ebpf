@@ -1,4 +1,4 @@
-#include <argp.h>
+/*#include <argp.h>
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
 #include <ctype.h>
@@ -28,7 +28,7 @@
             skel->progs.prog_name, env.pid, binary_path, 0, &uprobe_opts);         \
     } while(false)*/ 
 /*ATTACH_UPROBE_CHECKED(skel, lib, SSL_write, probe_SSL_rw_enter);*/ 
-#define __ATTACH_UPROBE(skel, binary_path, sym_name, prog_name, is_retprobe)   \
+/*#define __ATTACH_UPROBE(skel, binary_path, sym_name, prog_name, is_retprobe)   \
 	do {                                                                       \
 	  LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, .func_name = #sym_name,        \
 				  .retprobe = is_retprobe);                                    \
@@ -58,11 +58,39 @@
 	} while (false)
 */
 
-#define ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name) \
+/*#define ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name) \
     __ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name, false)
 
 #define ATTACH_URETPROBE_CHECKED(skel, binary_path, sym_name, prog_name)     \
-    __ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name, true)
+    __ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name, true)*/
+
+/*#define __ATTACH_UPROBE(skel, binary_path, sym_name, prog_name, is_retprobe)   \
+	do {                                                                       \
+	  LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, .func_name = #sym_name,        \
+				  .retprobe = is_retprobe);                                    \
+	  skel->links.prog_name = bpf_program__attach_uprobe_opts(                 \
+		  skel->progs.prog_name, env.pid, binary_path, 0, &uprobe_opts);       \
+	} while (false)
+
+#define __CHECK_PROGRAM(skel, prog_name)               \
+	do {                                               \
+	  if (!skel->links.prog_name) {                    \
+		perror("no program attached for " #prog_name); \
+		return -errno;                                 \
+	  }                                                \
+	} while (false)
+
+#define __ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name,     \
+								is_retprobe)                                \
+	do {                                                                    \
+	  __ATTACH_UPROBE(skel, binary_path, sym_name, prog_name, is_retprobe); \
+	  __CHECK_PROGRAM(skel, prog_name);                                     \
+	} while (false)
+
+#define ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name)     \
+	__ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name, false)
+#define ATTACH_URETPROBE_CHECKED(skel, binary_path, sym_name, prog_name)  \
+	__ATTACH_UPROBE_CHECKED(skel, binary_path, sym_name, prog_name, true)
 
 volatile sig_atomic_t exiting = 0;
 
@@ -208,7 +236,7 @@ static struct argp argp = {
 };
 */
 
-static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args) {
+/*static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args) {
     if(level == LIBBPF_DEBUG && !verbose) {
         return 0;
     }
@@ -227,7 +255,7 @@ int attach_openssl(struct sslsniff *skel, const char *lib) {
     ATTACH_UPROBE_CHECKED(skel, lib, SSL_write, probe_SSL_rw_enter);
     ATTACH_UPROBE_CHECKED(skel, lib, SSL_write, probe_SSL_write_exit);
     ATTACH_UPROBE_CHECKED(skel, lib, SSL_read, probe_SSL_rw_enter);
-    ATTACH_UPROBE_CHECKED(skel, lib, SSL_read, probe_SSL_rw_read_exit);
+    ATTACH_UPROBE_CHECKED(skel, lib, SSL_read, probe_SSL_read_exit);
 
     //只有ssl才会有握手延迟
     if(env.latency &&env.handshake) {
@@ -242,7 +270,7 @@ int attach_gnutls(struct sslsniff *skel, const char *lib) {
     ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_send, probe_SSL_rw_enter);
     ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_sned, probe_SSL_write_exit);
     ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_recv, probe_SSL_rw_enter);
-    ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_recv, probe_SSL_rw_read_exit);
+    ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_recv, probe_SSL_read_exit);
 
     return 0;
 }
@@ -251,7 +279,7 @@ int attach_nss(struct sslsniff *skel, const char *lib) {
     ATTACH_UPROBE_CHECKED(skel, lib, PR_Write, probe_SSL_rw_enter);
     ATTACH_URETPROBE_CHECKED(skel, lib, PR_Write, probe_SSL_write_exit);
     ATTACH_UPROBE_CHECKED(skel, lib, PR_Send, probe_SSL_rw_enter);
-    ATTACH_URETPROBE_CHECKED(skel, lib, PR_Send, probe_SSL_rw_write_exit);   
+    ATTACH_URETPROBE_CHECKED(skel, lib, PR_Send, probe_SSL_write_exit);   
 
     ATTACH_UPROBE_CHECKED(skel, lib, PR_Read, probe_SSL_rw_enter);
     ATTACH_URETPROBE_CHECKED(skel, lib, PR_Read, probe_SSL_read_exit);
@@ -278,7 +306,7 @@ char *find_libary_path(const char *libname) {
         strrchr()函数的作用是：
         查找一个字符串在另一个字符串中 末次 出现的位置，并返回从字符串中的这个位置起，一直到字符串结束的所有字符；
         如果未能找到指定字符，那么函数将返回False。*/
-        char *start = strrchr(path, '>');
+        /*char *start = strrchr(path, '>');
         if(start && (start + 1) == ' ') {
             memmove(path, start + 2, strlen(start + 2) + 1);
             //strchr() 用于查找字符串中的一个字符，并返回该字符在字符串中第一次出现的位置。
@@ -350,13 +378,13 @@ void print_event(struct probe_SSL_data_t *event, const char *evt) {
 #define LATENCY_FMT "%-7s"
 
     if(env.extra && env.latency) {
-        printf(BASE_FMT EXTRA_FMT LATENCY_FMT, rw_event[event-rw], time_s, event->comm, event->pid, event->len, event->uid, event->tid, lat_str);
+        printf(BASE_FMT EXTRA_FMT LATENCY_FMT, rw_event[event->rw], time_s, event->comm, event->pid, event->len, event->uid, event->tid, lat_str);
     } else if(env.extra) {
         printf(BASE_FMT EXTRA_FMT, rw_event[event->rw], time_s, event->comm, event->pid, event->len, event->uid, event->tid);
     } else if(env.latency) {
         printf(BASE_FMT LATENCY_FMT, rw_event[event->rw], time_s, event->comm, event->pid, event->len, lat_str);
     } else {
-        printf(BASE_FMT rw_event[event->rw], time_s, event->comm, event->pid, event->len);
+        printf(BASE_FMT, rw_event[event->rw], time_s, event->comm, event->pid, event->len);
     }
 
     if(buf_size != 0) {
@@ -402,7 +430,7 @@ int main(int argc, char **argv) {
 
     libbpf_set_print(libbpf_print_fn);
 
-    skel = sslsniff__opne_opts(&open_opts);
+    skel = sslsniff__open_opts(&open_opts);
     if(!skel) {
         warn("Failed to open BPF object\n");
         goto cleanup;
@@ -471,9 +499,9 @@ cleanup:
     perf_buffer__free(pb);
     sslsniff__destroy(skel);
     return err != 0;
-}
+}*/
 
-/*
+
 // SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 // Copyright (c) 2023 Yusheng Zheng
 //
@@ -667,7 +695,7 @@ static void sig_int(int signo) {
 	exiting = 1;
 }
 
-int attach_openssl(struct sslsniff_bpf *skel, const char *lib) {
+int attach_openssl(struct sslsniff *skel, const char *lib) {
 	ATTACH_UPROBE_CHECKED(skel, lib, SSL_write, probe_SSL_rw_enter);
 	ATTACH_URETPROBE_CHECKED(skel, lib, SSL_write, probe_SSL_write_exit);
 	ATTACH_UPROBE_CHECKED(skel, lib, SSL_read, probe_SSL_rw_enter);
@@ -683,7 +711,7 @@ int attach_openssl(struct sslsniff_bpf *skel, const char *lib) {
 	return 0;
 }
 
-int attach_gnutls(struct sslsniff_bpf *skel, const char *lib) {
+int attach_gnutls(struct sslsniff *skel, const char *lib) {
 	ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_send, probe_SSL_rw_enter);
 	ATTACH_URETPROBE_CHECKED(skel, lib, gnutls_record_send, probe_SSL_write_exit);
 	ATTACH_UPROBE_CHECKED(skel, lib, gnutls_record_recv, probe_SSL_rw_enter);
@@ -692,7 +720,7 @@ int attach_gnutls(struct sslsniff_bpf *skel, const char *lib) {
 	return 0;
 }
 
-int attach_nss(struct sslsniff_bpf *skel, const char *lib) {
+int attach_nss(struct sslsniff *skel, const char *lib) {
 	ATTACH_UPROBE_CHECKED(skel, lib, PR_Write, probe_SSL_rw_enter);
 	ATTACH_URETPROBE_CHECKED(skel, lib, PR_Write, probe_SSL_write_exit);
 	ATTACH_UPROBE_CHECKED(skel, lib, PR_Send, probe_SSL_rw_enter);
@@ -708,7 +736,7 @@ int attach_nss(struct sslsniff_bpf *skel, const char *lib) {
 /*
  * Find the path of a library using ldconfig.
  */
-/*char *find_library_path(const char *libname) {
+char *find_library_path(const char *libname) {
 	char cmd[128];
 	static char path[512];
 	FILE *fp;
@@ -845,7 +873,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size) {
 
 int main(int argc, char **argv) {
 	LIBBPF_OPTS(bpf_object_open_opts, open_opts);
-	struct sslsniff_bpf *obj = NULL;
+	struct sslsniff *obj = NULL;
 	struct perf_buffer *pb = NULL;
 	int err;
 
@@ -855,7 +883,7 @@ int main(int argc, char **argv) {
 
 	libbpf_set_print(libbpf_print_fn);
 
-	obj = sslsniff_bpf__open_opts(&open_opts);
+	obj = sslsniff__open_opts(&open_opts);
 	if (!obj) {
 		warn("failed to open BPF object\n");
 		goto cleanup;
@@ -864,7 +892,7 @@ int main(int argc, char **argv) {
 	obj->rodata->targ_uid = env.uid;
 	obj->rodata->targ_pid = env.pid == INVALID_PID ? 0 : env.pid;
 
-	err = sslsniff_bpf__load(obj);
+	err = sslsniff__load(obj);
 	if (err) {
 		warn("failed to load BPF object: %d\n", err);
 		goto cleanup;
@@ -923,9 +951,8 @@ int main(int argc, char **argv) {
 
 cleanup:
 	perf_buffer__free(pb);
-	sslsniff_bpf__destroy(obj);
+	sslsniff__destroy(obj);
 	return err != 0;
 }
-*/
 
 

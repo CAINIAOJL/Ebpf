@@ -1,5 +1,5 @@
 #define __TARGET_ARCH_x86
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
@@ -80,7 +80,7 @@ int BPF_UPROBE(probe_SSL_rw_enter, void *ssl, void *buf, int num) {
     }
     
     /* store arg info for later lookup */
-    bpf_map_update_elem(&start_ns, &tid, &ts, BPF_ANY);
+    /*bpf_map_update_elem(&start_ns, &tid, &ts, BPF_ANY);
     bpf_map_update_elem(&bufs, &tid, &buf, BPF_ANY);
 }
 
@@ -108,8 +108,8 @@ static int SSL_exit(struct pt_regs *ctx, int rw) {
     }
     u64 delta_ns = ts - *tsp; /*时间差*/
 
-    int len = PT_REGS_RC(ctx); /*返回值*/
-    if(len <= 0) {
+    /*int len = PT_REGS_RC(ctx); /*返回值*/
+    /*if(len <= 0) {
         return 0;
     }
 
@@ -161,7 +161,7 @@ int BPF_URETPROBE(probe_SSL_write_exit) {
 }
 
 SEC("uprobe/do_handshake")
-int BPF_UPROBE(probe_SSL_do_handshake, void* ssl) {
+int BPF_UPROBE(probe_SSL_do_handshake_enter, void* ssl) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 pid = pid_tgid >> 32;
     u32 tid = pid_tgid;
@@ -224,14 +224,14 @@ int BPF_URETPROBE(probe_SSL_do_handshake_exit) {
 }
 
 char LICENSE[] SEC("license") = "GPL";
+*/
 
-/*
 // SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 // Copyright (c) 2023 Yusheng Zheng
 //
 // Based on sslsniff from BCC by Adrian Lopez & Mark Drayton.
 // 15-Aug-2023   Yusheng Zheng   Created this.
-#include <vmlinux.h>
+#include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
@@ -283,7 +283,7 @@ const volatile uid_t targ_uid = -1;
 static __always_inline bool trace_allowed(u32 uid, u32 pid)
 {
     /* filters */
-    /*if (targ_pid && targ_pid != pid)
+    if (targ_pid && targ_pid != pid)
         return false;
     if (targ_uid != -1) {
         if (targ_uid != uid) {
@@ -306,7 +306,7 @@ int BPF_UPROBE(probe_SSL_rw_enter, void *ssl, void *buf, int num) {
     }
 
     /* store arg info for later lookup */
-    /*bpf_map_update_elem(&bufs, &tid, &buf, BPF_ANY);
+    bpf_map_update_elem(&bufs, &tid, &buf, BPF_ANY);
     bpf_map_update_elem(&start_ns, &tid, &ts, BPF_ANY);
     return 0;
 }
@@ -325,7 +325,7 @@ static int SSL_exit(struct pt_regs *ctx, int rw) {
     }
 
     /* store arg info for later lookup */
-    /*u64 *bufp = bpf_map_lookup_elem(&bufs, &tid);
+    u64 *bufp = bpf_map_lookup_elem(&bufs, &tid);
     if (bufp == 0)
         return 0;
 
@@ -394,7 +394,7 @@ int BPF_UPROBE(probe_SSL_do_handshake_enter, void *ssl) {
     }
 
     /* store arg info for later lookup */
-    /*bpf_map_update_elem(&start_ns, &tid, &ts, BPF_ANY);
+    bpf_map_update_elem(&start_ns, &tid, &ts, BPF_ANY);
     return 0;
 }
 
@@ -409,10 +409,10 @@ int BPF_URETPROBE(probe_SSL_do_handshake_exit) {
     int ret = 0;
 
     /* use kernel terminology here for tgid/pid: */
-    /*u32 tgid = pid_tgid >> 32;
+    u32 tgid = pid_tgid >> 32;
 
     /* store arg info for later lookup */
-    /*if (!trace_allowed(tgid, pid)) {
+    if (!trace_allowed(tgid, pid)) {
         return 0;
     }
 
@@ -447,4 +447,3 @@ int BPF_URETPROBE(probe_SSL_do_handshake_exit) {
 
 char LICENSE[] SEC("license") = "GPL";
 
-*/

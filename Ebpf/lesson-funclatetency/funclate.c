@@ -271,7 +271,7 @@ static void sig_hand(int signr)
 	exiting = true;
 }
 
-static struct sigaction sigact = {.sa_handler = sig_hand};
+static struct sigaction sigacter = {.sa_handler = sig_hand};
 
 #ifndef min
 #define min(a,b) ((a) < (b) ? (a) : (b))
@@ -357,7 +357,7 @@ int main(int argc, char **argv) {
     //检查是否是内核函数
     env.is_kernel_func = !strchr(env.funcname, ':');
 
-    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGINT, &sigacter, NULL);
 
     libbpf_set_print(libbpf_print_fn);
 
@@ -384,13 +384,13 @@ int main(int argc, char **argv) {
     if(env.is_kernel_func) {
         err = attach_kprobe(obj);
     } else {
-        err = attach_uporbe(obj);
+        err = attach_uprobe(obj);
     }
     if(err) {
         goto cleanup;
     }
 
-    err = funclate___attach(obj);
+    err = funclate__attach(obj);
     if(err) {
         fprintf(stderr, "Failed to attach BPF programs: %s\n", strerror(-err));
         goto cleanup;

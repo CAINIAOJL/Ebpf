@@ -14,5 +14,6 @@ struct probe_SSL_data_t {
     int rw;                      // 读写类型
     char comm[TASK_COMM_LEN];    // 进程名
     __u8 buf[MAX_BUF_SIZE];      // 读写数据
-    int is_handleshake;          // 是否为握手数据
+    //int is_handleshake;          // 是否为握手数据
+    int is_handshake;
 };
