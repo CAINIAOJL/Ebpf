@@ -45,6 +45,14 @@
         "dirent.h": "c",
         "replace2.h": "c",
         "bpf_sockmap.h": "c",
-        "sslsbiff.h": "c"
+        "sslsbiff.h": "c",
+        "cassert": "cpp",
+        "*.tcc": "c",
+        "iosfwd": "c",
+        "istream": "c",
+        "limits": "c",
+        "sstream": "c",
+        "streambuf": "c",
+        "user-ringbuf.h": "c"
     }
 }
