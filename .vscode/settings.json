@@ -53,6 +53,7 @@
         "limits": "c",
         "sstream": "c",
         "streambuf": "c",
-        "user-ringbuf.h": "c"
+        "user-ringbuf.h": "c",
+        "user-ringbuf.skel.h": "c"
     }
 }

@@ -4,6 +4,11 @@ set -xe
 
 part_mac="DE:AD:BE:EF:00:"
 
+#create_bridge()：做一个网桥。
+#ip link show $1：检查网桥$1是否存在。
+#ip link add name $1 type bridge：如果不存在，则创建一个新的网桥。
+#ip link set dev $1 up: 将网桥接口设置为UP状态。
+#br0
 create_bridge () {
   if ! ip link show $1 &> /dev/null; then
     ip link add name $1 type bridge
@@ -13,6 +18,13 @@ create_bridge () {
   fi
 }
 
+#create_pair()：创建虚拟以太网并分配IP地址。
+#ip link add name $1 type veth peer name $2: 创建名为$1和$2的 veth 对。
+#ip link set $1 address "$part_mac""$5"：为接口$1分配一个MAC地址。
+#ip addr add $3 brd + dev $1: 为接口$1分配IP地址$3。
+#ip link set $2 master $4: 将接口$2连接到网桥$4。
+#ip link set dev $1 up和ip link set dev $2 up: 将 veth 对的两个接口设置为UP状态。
+#veth0 veth1 "10.0.0.1/24" br0 01
 create_pair () {
   if ! ip link show $1 &> /dev/null; then
     ip link add name $1 type veth peer name $2
@@ -26,6 +38,15 @@ create_pair () {
   fi
 }
 
+#create_pair_ns()：创建一个 veth 对，最后追加网络命名空间。
+#ip link set $1 netns $5: 将 veth 的后续$1移动到命名空间$5。
+#ip netns exec $5: 在命名空间$5中执行命令，如：
+#ip addr add $3 brd + dev $1: 分配IP地址。
+#ip link set lo up: 启用环回接口。
+
+#veth2 veth3 "10.0.0.2/24" br0 h2 02
+#veth4 veth5 "10.0.0.3/24" br0 h3 03
+#veth6 veth7 "10.0.0.10/24" br0 lb 10
 create_pair_ns () {
   if ! ip link show $2 &> /dev/null; then
     ip link add name $1 type veth peer name $2
@@ -56,6 +77,8 @@ create_pair_ns veth4 veth5 "10.0.0.3/24" br0 h3 03
 # Create the lb namespace
 create_pair_ns veth6 veth7 "10.0.0.10/24" br0 lb 10
 
+#开启IP转发，以允许不同的网络命名空间之间转发数据包。
+#设置iptables的FORWARD链策略默认为ACCEPT。
 # Enable IP forwarding on the host
 sudo sysctl -w net.ipv4.ip_forward=1
 
@@ -67,6 +90,7 @@ sudo iptables -P FORWARD ACCEPT
 # sudo ip netns exec h3 bpftool load  xdp_pass.o veth4
 
 # Helper function for error exit on ping failure
+#ping_or_fail()：尝试从命名空间$1ping目标IP $2，如果失败则退出。
 function ping_or_fail() {
   if ! sudo ip netns exec $1 ping -c 3 $2; then
     echo "Ping from $1 to $2 failed!"

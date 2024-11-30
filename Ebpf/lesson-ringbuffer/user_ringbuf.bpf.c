@@ -5,10 +5,10 @@
 
 #include "user-ringbuf.h"
 
-char LICENSE[] SEC("license") = "Dual BSD/GPL";
+char LICENSE[] SEC("license") = "GPL";
 
 struct {
-    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(type, BPF_MAP_TYPE_USER_RINGBUF);
     __uint(max_entries, 256 * 1024);
 } user_ringbuf SEC(".maps");
 

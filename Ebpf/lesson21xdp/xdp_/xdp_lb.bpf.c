@@ -50,6 +50,7 @@ MAC地址{0xDE, 0xAD, 0xBE, 0xEF, 0x0, 0x10}在十六进制表示为DE:AD:BE:EF:
 static __always_inline __u16
 csum_fold_helper(__u64 csum) {
     int i;
+    //64 ---> 16 64 / 16 == 4
     for(i = 0; i < 4; i++) {
         if(csum >> 16) {
             csum = (csum & 0xffff) + (csum >> 16);

@@ -1,5 +1,5 @@
 // xdp_lb.c
-/*#include <arpa/inet.h>
+#include <arpa/inet.h>
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <stdio.h>
@@ -23,7 +23,7 @@ static int parse_mac(const char* str, unsigned char* mac) {
     }
     return 0;
 }
-
+/*网络接口的名称 (ifname)、两个后端服务器的 IP 地址和 MAC 地址。*/
 int main(int argc, char** args) {
     if (argc != 6) {
         fprintf(stderr, "Usage: %s <ifname> <backend1_ip> <backend1_mac> <backend2_ip> <backend2_mac>\n", argv[0]);
@@ -33,7 +33,7 @@ int main(int argc, char** args) {
     const char* ifname = agrv[1];
     struct backend_config backend[2];
 
-
+    //两个后端服务器的IP地址和MAC地址
     if(inet_pton(AF_INET, argv[2], &backend[0].ip) != 1) {
         fprintf(stderr, "Invalid IP address: %s\n", argv[2]);
         return 1;
@@ -53,12 +53,12 @@ int main(int argc, char** args) {
     }
 
     //load and attach ebpf program 
-    struct xdp_lb_bpf* skel = xdp_lb_bpf__open_and_load();
+    struct xdp_lb* skel = xdp_lb_bpf__open_and_load();
     if(!skel) {
         fprintf(stderr, "Failed to open and load BPF skeleton\n");
         return 1;
     }
-    
+    //网口名称
     int ifindex = if_nameindex(ifname);
     if(ifindex < 0) {
         perror("Failed to get ifindex");
@@ -92,13 +92,13 @@ int main(int argc, char** args) {
     }
 
     bpf_xdp_detach(ifindex, 0, NULL);
-    xdp_lb_bpf__destroy(skel);
-    xdp_lb_bpf_detach(skel);
+    xdp_lb__destroy(skel);
+    xdp_lb__detach(skel);
     return 0;
-} */
+}
 
 // xdp_lb.c
-#include <arpa/inet.h>
+/*#include <arpa/inet.h>
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <stdio.h>
@@ -192,4 +192,4 @@ int main(int argc, char **argv) {
     xdp_lb_bpf__detach(skel);
     xdp_lb_bpf__destroy(skel);
     return 0;
-}
+}*/

@@ -114,7 +114,7 @@ char LICENSE[] SEC("license") = "GPL";
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2019 Facebook
 // Copyright (c) 2020 Netflix
-#include <vmlinux.h>
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include "open-modifiy.h"
 

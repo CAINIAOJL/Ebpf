@@ -56,7 +56,7 @@ static void sig_handler(int sig)
 struct user_ring_buffer *user_ringbuf = NULL;
 
 static int handle_event(void *ctx, void *data, size_t data_sz) {
-    	const struct event *e = data;
+    const struct event *e = data;
 	struct tm *tm;
 	char ts[32];
 	time_t t;
