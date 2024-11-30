@@ -1,4 +1,4 @@
-#include <argp.h>
+/*#include <argp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,7 +73,7 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
 
 int main(int argc, char **argv) {
     struct ring_buffer *rb = NULL;
-    struct user-ringbuf *skel;
+    struct user_ringbuf *skel;
     int err;
 
     libbpf_set_print(libbpf_print_fn);
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    skel = user-ringbuf__open();
+    skel = user_ringbuf__open();
     if (!skel) {
 		fprintf(stderr, "Failed to open and load BPF skeleton\n");
 		return 1;
@@ -89,13 +89,13 @@ int main(int argc, char **argv) {
 
     skel->bss->read = 0;
 
-    err = user-ringbuf__load(skel);
+    err = user_ringbuf__load(skel);
     if (err) {
 		fprintf(stderr, "Failed to load and verify BPF skeleton\n");
 		goto cleanup;
 	}
 
-    err = user-ringbuf__attach(skel);
+    err = user_ringbuf__attach(skel);
     if (err) {
 		fprintf(stderr, "Failed to attach BPF skeleton\n");
 		goto cleanup;
@@ -130,24 +130,25 @@ int main(int argc, char **argv) {
 
 cleanup:
     ring_buffer__free(rb);
-    user-ringbuf__destroy(skel);
+    user_ringbuf__destroy(skel);
     user_ring_buffer__free(user_ringbuf);
 
     return err < 0 ? -err : 0;
 
-}
+}*/
 
 
 // SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 /* Copyright (c) 2020 Facebook */
-/*#include <argp.h>
+#include <argp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
-#include "user_ringbuf.h"
-#include "user_ringbuf.skel.h"
+#include <unistd.h>
+#include "user-ringbuf.h"
+#include "user-ringbuf.skel.h"
 
 static void drain_current_samples(void)
 {
@@ -175,7 +176,7 @@ static int write_samples(struct user_ring_buffer *ringbuf)
 		/* Assert on the error path to avoid spamming logs with
 		 * mostly success messages.
 		 */
-		/*err = read;
+		err = read;
 		user_ring_buffer__discard(ringbuf, entry);
 		goto done;
 	}
@@ -222,18 +223,18 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
 int main(int argc, char **argv)
 {
 	struct ring_buffer *rb = NULL;
-	struct user_ringbuf_bpf *skel;
+	struct user_ringbuf *skel;
 	int err;
 
 	/* Set up libbpf errors and debug info callback */
-	//libbpf_set_print(libbpf_print_fn);
+	libbpf_set_print(libbpf_print_fn);
 
 	/* Cleaner handling of Ctrl-C */
-	//signal(SIGINT, sig_handler);
-	//signal(SIGTERM, sig_handler);
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
 
 	/* Load and verify BPF application */
-	/*skel = user_ringbuf_bpf__open();
+	skel = user_ringbuf__open();
 	if (!skel)
 	{
 		fprintf(stderr, "Failed to open and load BPF skeleton\n");
@@ -241,10 +242,10 @@ int main(int argc, char **argv)
 	}
 
 	/* Parameterize BPF code with minimum duration parameter */
-	//skel->bss->read = 0;
+	skel->bss->read = 0;
 
 	/* Load & verify BPF programs */
-	/*err = user_ringbuf_bpf__load(skel);
+	err = user_ringbuf__load(skel);
 	if (err)
 	{
 		fprintf(stderr, "Failed to load and verify BPF skeleton\n");
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Attach tracepoints */
-	/*err = user_ringbuf_bpf__attach(skel);
+	err = user_ringbuf__attach(skel);
 	if (err)
 	{
 		fprintf(stderr, "Failed to attach BPF skeleton\n");
@@ -260,7 +261,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Set up ring buffer polling */
-	/*rb = ring_buffer__new(bpf_map__fd(skel->maps.kernel_ringbuf), handle_event, NULL, NULL);
+	rb = ring_buffer__new(bpf_map__fd(skel->maps.kernel_ringbuf), handle_event, NULL, NULL);
 	if (!rb)
 	{
 		err = -1;
@@ -272,13 +273,13 @@ int main(int argc, char **argv)
 	write_samples(user_ringbuf);
 
 	/* Process events */
-	/*printf("%-8s %-5s %-16s %-7s %-7s %s\n",
+	printf("%-8s %-5s %-16s %-7s %-7s %s\n",
 		   "TIME", "EVENT", "COMM", "PID", "PPID", "FILENAME/EXIT CODE");
 	while (!exiting)
 	{
-		err = ring_buffer__poll(rb, 100 /* timeout, ms *///);
+		err = ring_buffer__poll(rb, 100 /* timeout, ms */);
 		/* Ctrl-C will cause -EINTR */
-		/*if (err == -EINTR)
+		if (err == -EINTR)
 		{
 			err = 0;
 			break;
@@ -292,10 +293,9 @@ int main(int argc, char **argv)
 
 cleanup:
 	/* Clean up */
-	/*ring_buffer__free(rb);
-	user_ringbuf_bpf__destroy(skel);
+	ring_buffer__free(rb);
+	user_ringbuf__destroy(skel);
 	user_ring_buffer__free(user_ringbuf);
 
 	return err < 0 ? -err : 0;
 }
-*/

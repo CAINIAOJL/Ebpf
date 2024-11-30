@@ -1,4 +1,4 @@
-#include "vmlinux.h"
+/*#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_tracing.h>
@@ -36,23 +36,23 @@ static long do_nothing_cb(struct bpf_dynptr *dynptr, void *context) {
     return 0;
 }
 /*print fmt: "pid: 0x%08lx, sig: 0x%08lx", ((unsigned long)(REC->pid)), ((unsigned long)(REC->sig))*/
-SEC("tracepoint/syscalls/sys_exit_kill")
+/*SEC("tracepoint/syscalls/sys_exit_kill")
 int kill_exit(struct trace_event_raw_sys_exit *ctx) {
     long num_samples;
     int err;
 
     num_samples = bpf_user_ringbuf_drain(&user_ringbuf, do_nothing_cb, NULL, 0);
     return 0;
-}
+}*/
 
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Meta Platforms, Inc. and affiliates. */
 
-/*#include "vmlinux.h"
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
-#include "user_ringbuf.h"
+#include "user-ringbuf.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -76,10 +76,10 @@ do_nothing_cb(struct bpf_dynptr *dynptr, void *context)
 	struct event *e;
 	pid_t pid;
 	/* get PID and TID of exiting thread/process */
-	//pid = bpf_get_current_pid_tgid() >> 32;
+	pid = bpf_get_current_pid_tgid() >> 32;
 
 	/* reserve sample from BPF ringbuf */
-	/*e = bpf_ringbuf_reserve(&kernel_ringbuf, sizeof(*e), 0);
+	e = bpf_ringbuf_reserve(&kernel_ringbuf, sizeof(*e), 0);
 	if (!e)
 		return 0;
 
@@ -87,7 +87,7 @@ do_nothing_cb(struct bpf_dynptr *dynptr, void *context)
 	bpf_get_current_comm(&e->comm, sizeof(e->comm));
 
 	/* send data to user-space for post-processing */
-	/*bpf_ringbuf_submit(e, 0);
+	bpf_ringbuf_submit(e, 0);
 	__sync_fetch_and_add(&read, 1);
 	return 0;
 }
@@ -103,4 +103,3 @@ int kill_exit(struct trace_event_raw_sys_exit *ctx)
 
 	return 0;
 }
-*/
