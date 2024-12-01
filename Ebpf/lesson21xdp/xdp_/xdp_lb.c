@@ -12,7 +12,7 @@
 struct backend_config {
     __u32 ip;
     unsigned char mac[16];
-}
+};
 
 static int parse_mac(const char* str, unsigned char* mac) {
     if(sscanf(str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
@@ -24,13 +24,13 @@ static int parse_mac(const char* str, unsigned char* mac) {
     return 0;
 }
 /*网络接口的名称 (ifname)、两个后端服务器的 IP 地址和 MAC 地址。*/
-int main(int argc, char** args) {
+int main(int argc, char** argv) {
     if (argc != 6) {
         fprintf(stderr, "Usage: %s <ifname> <backend1_ip> <backend1_mac> <backend2_ip> <backend2_mac>\n", argv[0]);
         return 1;
     }
 
-    const char* ifname = agrv[1];
+    const char* ifname = argv[1];
     struct backend_config backend[2];
 
     //两个后端服务器的IP地址和MAC地址
@@ -53,22 +53,22 @@ int main(int argc, char** args) {
     }
 
     //load and attach ebpf program 
-    struct xdp_lb* skel = xdp_lb_bpf__open_and_load();
+    struct xdp_lb* skel = xdp_lb__open_and_load();
     if(!skel) {
         fprintf(stderr, "Failed to open and load BPF skeleton\n");
         return 1;
     }
     //网口名称
-    int ifindex = if_nameindex(ifname);
+    int ifindex = if_nametoindex(ifname);
     if(ifindex < 0) {
         perror("Failed to get ifindex");
-        xdp_lb_bpf__destroy(skel);
+        xdp_lb__destroy(skel);
         return 1;
     }
 
     if(bpf_program__attach_xdp(skel->progs.xdp_load_balancer, ifindex) < 0) {
         fprintf(stderr, "Failed to attach XDP program\n");
-        xdp_lb_bpf__destroy(skel);
+        xdp_lb__destroy(skel);
         return 1;
     }
 
@@ -76,7 +76,7 @@ int main(int argc, char** args) {
     for(int i = 0; i < 2; i++) {
         if(bpf_map_update_elem(bpf_map__fd(skel->maps.backends), &i, &backend[i], 0) < 0) {
             perror("bpf_map_update_elem");
-            xdp_lb_bpf__destroy(skel);
+            xdp_lb__destroy(skel);
             return 1;
         }
     }

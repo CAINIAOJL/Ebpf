@@ -8,7 +8,7 @@
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
 
-#include "xdp-tcpdump.skel.h"
+#include "xdp_tcpdump.skel.h"
 
 static int handle_xdp_event(void *ctx, void* data, size_t data_sz) {
     if(data_sz < 20) {
@@ -87,7 +87,7 @@ int main(int argc, char ** argv) {
 
     const char *ifname = argv[1];
     int ifindex;
-    ifindex = if_nameindex(ifname);
+    ifindex = if_nametoindex(ifname);
     if(ifindex == 0) {
         fprintf(stderr, "Invalid interface name %s\n", ifname);
         return 1;
@@ -121,6 +121,7 @@ int main(int argc, char ** argv) {
     }
 
     printf("Successfully attached XDP program to interface %s\n", ifname);
+    rb = ring_buffer__new(bpf_map__fd(skel->maps.rb), handle_xdp_event, NULL, NULL);
     if(!rb) {
         fprintf(stderr, "Failed to create ring buffer\n");
         err = -1;
@@ -142,7 +143,7 @@ int main(int argc, char ** argv) {
 
 cleanup:
     xdp_tcpdump__destroy(skel);
-    ring_biffer__free(rb);
+    ring_buffer__free(rb);
 
     return -err;
 }
