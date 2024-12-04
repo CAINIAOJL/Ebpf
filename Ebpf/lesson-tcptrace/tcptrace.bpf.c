@@ -50,14 +50,18 @@ struct {
 
 static int read_ipv4_tuple(struct ipv4_tuple_t *tuple, struct sock *skp) {
     u32 net_ns_inum = 0;
-    u32 saddr = skp->__sk_common.skc_rcv_saddr;
-    u32 daddr = skp->__sk_common.skc_daddr;
+    //u32 saddr = skp->__sk_common.skc_rcv_saddr;
+    //u32 daddr = skp->__sk_common.skc_daddr;
+    u32 saddr = BPF_CORE_READ(skp, __sk_common.skc_rcv_saddr);
+    u32 daddr = BPF_CORE_READ(skp, __sk_common.skc_daddr);
     struct inet_sock *sockp = (struct inet_sock *)skp;
-    u16 sport = sockp->inet_sport;
-    u16 dport = skp->__sk_common.skc_dport;
+    //u16 sport = sockp->inet_sport;
+    //u16 dport = skp->__sk_common.skc_dport;
+    u16 sport = BPF_CORE_READ(sockp, inet_sport);
+    u16 dport = BPF_CORE_READ(skp, __sk_common.skc_dport);
 
 #ifdef CONFIG_NET_NS
-    net_ns_inum = skp->__sk_common.skc_net.net->ns.inum;
+    net_ns_inum = BPF_CORE_READ(skp, __sk_common.skc_net.net->ns.inum);
 #endif
 
     tuple->saddr = saddr;
@@ -76,8 +80,10 @@ static int read_ipv6_tuple(struct ipv6_tuple_t *tuple, struct sock *skp) {
     u32 net_ns_inum = 0;
     unsigned __int128 saddr = 0, daddr = 0;
     struct inet_sock *sockp = (struct inet_sock *)skp;
-    u16 sport = sockp->inet_sport;
-    u16 dport = skp->__sk_common.skc_dport;
+    //u16 sport = sockp->inet_sport;
+    //u16 dport = skp->__sk_common.skc_dport;
+    u16 sport = BPF_CORE_READ(sockp, inet_sport);
+    u16 dport = BPF_CORE_READ(skp, __sk_common.skc_dport);
 
 #ifdef CONFIG_NET_NS
     net_ns_inum = skp->__sk_common.skc_net.net->ns.inum;
@@ -100,7 +106,7 @@ static int read_ipv6_tuple(struct ipv6_tuple_t *tuple, struct sock *skp) {
 
 static bool check_family(struct sock *sk, u16 expected_family) {
     u64 zero = 0;
-    u16 family = sk->__sk_common.skc_family;
+    u16 family = BPF_CORE_READ(sk, __sk_common.skc_family);
     return family == expected_family;
 }
 
@@ -110,7 +116,7 @@ int trace_connect_v4_entry(struct pt_regs *ctx, struct sock *sk) {
     //。。。。。。
     u64 pid = bpf_get_current_pid_tgid();
 
-    u16 family =sk->__sk_common.skc_family;
+    u16 family = BPF_CORE_READ(sk, __sk_common.skc_family);
     //更新
     bpf_map_update_elem(&connectsock, &pid, &sk, BPF_ANY);
     return 0;
@@ -120,7 +126,8 @@ int trace_connect_v4_return(struct pt_regs *ctx) {
     int ret = PT_REGS_RC(ctx);
 
     u64 pid = bpf_get_current_pid_tgid();
-    struct sock ** skpp = bpf_map_lookup_elem(&connectsock, &pid);
+    struct sock ** skpp;
+    skpp = bpf_map_lookup_elem(&connectsock, &pid);
     if (skpp == NULL) {
         return 0;
     }
@@ -186,11 +193,12 @@ int trace_connect_v6_return(struct pt_regs *ctx) {
     return 0;
 }
 //追踪状态改变，每次状态改变，都会调用这个函数
+//问题
 int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
     if (state != TCP_ESTABLISHED && state != TCP_CLOSE) {
         return 0;
     }
-    u16 family = sk->__sk_common.skc_family;
+    u16 family = BPF_CORE_READ(sk, __sk_common.skc_family);
 
     u8 ipver = 0;
     if(check_family(sk, AF_INET)) {
@@ -281,9 +289,9 @@ int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
 
     u64 pid = bpf_get_current_pid_tgid();
 
-    u16 family =sk->__sk_common.skc_family;
+    u16 family =BPF_CORE_READ(sk, __sk_common.skc_family);
 
-    u8 oldstate = sk->__sk_common.skc_state;
+    u8 oldstate = BPF_CORE_READ(sk, __sk_common.skc_state);
     //close tcp事件
     if(oldstate == TCP_SYN_SENT || oldstate == TCP_SYN_RECV || oldstate == TCP_NEW_SYN_RECV) {
         return 0;
@@ -353,14 +361,14 @@ int trace_accept_return(struct pt_regs *ctx) {
     }
     u32 net_ns_inum = 0;
     u8 ipver = 0;
-    u16 lport = newsock->__sk_common.skc_num;
-    u16 dport = newsock->__sk_common.skc_dport;
+    u16 lport = BPF_CORE_READ(newsock, __sk_common.skc_num);
+    u16 dport = BPF_CORE_READ(newsock, __sk_common.skc_dport);
 
 #ifdef CONFIG_NET_NS
     net_ns_inum = newsock->__sk_common.skc_net.net->ns.inum;
 #endif
 
-    u16 family = newsock->__sk_common.skc_family;
+    u16 family = BPF_CORE_READ(newsock, __sk_common.skc_family);
 
     if(check_family(newsock, AF_INET)) {
         ipver = 4;
@@ -373,8 +381,8 @@ int trace_accept_return(struct pt_regs *ctx) {
         ipv4_event->ip = ipver;
         ipv4_event->netns = net_ns_inum;
 
-        ipv4_event->saddr = newsock->__sk_common.skc_rcv_saddr;
-        ipv4_event->daddr = newsock->__sk_common.skc_daddr;
+        ipv4_event->saddr = BPF_CORE_READ(newsock, __sk_common.skc_rcv_saddr);
+        ipv4_event->daddr = BPF_CORE_READ(newsock, __sk_common.skc_daddr);
 
         ipv4_event->sport = lport;
         ipv4_event->daddr = bpf_ntohs(dport);
@@ -421,7 +429,7 @@ int BPF_KPROBE(kprobe_tcp_v4_connect_entry, struct sock *sk) {
 }
 
 SEC("kretprobe/tcp_v4_connect")
-int BPF_KRETPROBE(krpobe_tcp_v4_connect_return) {
+int BPF_KRETPROBE(kprobe_tcp_v4_connect_return) {
     return trace_connect_v4_return(ctx);
 }
 

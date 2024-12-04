@@ -286,10 +286,10 @@ int main(int argc, char** argv) {
             return -1;
         }
 
-        skel->links.krpobe_tcp_v4_connect_return = 
-            bpf_program__attach_kprobe(skel->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
+        skel->links.kprobe_tcp_v4_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v4_connect_return, true, "tcp_v4_connect");
 
-        if(!skel->links.krpobe_tcp_v4_connect_return) {
+        if(!skel->links.kprobe_tcp_v4_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "krpobe_tcp_v4_connect_return", -errno);
             return -1;
         }
@@ -318,10 +318,10 @@ int main(int argc, char** argv) {
             return -1;
         }
 
-        skel->links.krpobe_tcp_v4_connect_return = 
-            bpf_program__attach_kprobe(skel->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
+        skel->links.kprobe_tcp_v4_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v4_connect_return, true, "tcp_v4_connect");
 
-        if(!skel->links.krpobe_tcp_v4_connect_return) {
+        if(!skel->links.kprobe_tcp_v4_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "krpobe_tcp_v4_connect_return", -errno);
             return -1;
         }
