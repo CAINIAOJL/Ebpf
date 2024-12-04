@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct xdp_tcpdump {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *rb;
 		struct bpf_map *rodata;
@@ -23,7 +23,7 @@ struct xdp_tcpdump {
 	} links;
 
 #ifdef __cplusplus
-	static inline struct xdp_tcpdump *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct xdp_tcpdump *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct xdp_tcpdump *open_and_load();
 	static inline int load(struct xdp_tcpdump *skel);
 	static inline int attach(struct xdp_tcpdump *skel);
@@ -34,41 +34,41 @@ struct xdp_tcpdump {
 };
 
 static void
-xdp_tcpdump__destroy(struct xdp_tcpdump *obj)
+xdp_tcpdump__destroy(struct xdp_tcpdump *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-xdp_tcpdump__create_skeleton(struct xdp_tcpdump *obj);
+xdp_tcpdump__create_skeleton(struct xdp_tcpdump *skel);
 
 static inline struct xdp_tcpdump *
-xdp_tcpdump__open_opts(const struct bpf_object_open_opts *opts)
+xdp_tcpdump__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct xdp_tcpdump *obj;
+	struct xdp_tcpdump *skel;
 	int err;
 
-	obj = (struct xdp_tcpdump *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct xdp_tcpdump *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = xdp_tcpdump__create_skeleton(obj);
+	err = xdp_tcpdump__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	xdp_tcpdump__destroy(obj);
+	xdp_tcpdump__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -80,50 +80,50 @@ xdp_tcpdump__open(void)
 }
 
 static inline int
-xdp_tcpdump__load(struct xdp_tcpdump *obj)
+xdp_tcpdump__load(struct xdp_tcpdump *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct xdp_tcpdump *
 xdp_tcpdump__open_and_load(void)
 {
-	struct xdp_tcpdump *obj;
+	struct xdp_tcpdump *skel;
 	int err;
 
-	obj = xdp_tcpdump__open();
-	if (!obj)
+	skel = xdp_tcpdump__open();
+	if (!skel)
 		return NULL;
-	err = xdp_tcpdump__load(obj);
+	err = xdp_tcpdump__load(skel);
 	if (err) {
-		xdp_tcpdump__destroy(obj);
+		xdp_tcpdump__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-xdp_tcpdump__attach(struct xdp_tcpdump *obj)
+xdp_tcpdump__attach(struct xdp_tcpdump *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-xdp_tcpdump__detach(struct xdp_tcpdump *obj)
+xdp_tcpdump__detach(struct xdp_tcpdump *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *xdp_tcpdump__elf_bytes(size_t *sz);
 
 static inline int
-xdp_tcpdump__create_skeleton(struct xdp_tcpdump *obj)
+xdp_tcpdump__create_skeleton(struct xdp_tcpdump *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -131,7 +131,7 @@ xdp_tcpdump__create_skeleton(struct xdp_tcpdump *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "xdp_tcpdump";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 2;
@@ -143,10 +143,10 @@ xdp_tcpdump__create_skeleton(struct xdp_tcpdump *obj)
 	}
 
 	s->maps[0].name = "rb";
-	s->maps[0].map = &obj->maps.rb;
+	s->maps[0].map = &skel->maps.rb;
 
 	s->maps[1].name = "xdp_tcpd.rodata";
-	s->maps[1].map = &obj->maps.rodata;
+	s->maps[1].map = &skel->maps.rodata;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -158,15 +158,15 @@ xdp_tcpdump__create_skeleton(struct xdp_tcpdump *obj)
 	}
 
 	s->progs[0].name = "xdp_pass";
-	s->progs[0].prog = &obj->progs.xdp_pass;
-	s->progs[0].link = &obj->links.xdp_pass;
+	s->progs[0].prog = &skel->progs.xdp_pass;
+	s->progs[0].link = &skel->links.xdp_pass;
 
 	s->data = xdp_tcpdump__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -662,7 +662,7 @@ static inline const void *xdp_tcpdump__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct xdp_tcpdump *xdp_tcpdump::open(const struct bpf_object_open_opts *opts) { return xdp_tcpdump__open_opts(opts); }
+struct xdp_tcpdump *xdp_tcpdump::open(const struct bpf_skelect_open_opts *opts) { return xdp_tcpdump__open_opts(opts); }
 struct xdp_tcpdump *xdp_tcpdump::open_and_load() { return xdp_tcpdump__open_and_load(); }
 int xdp_tcpdump::load(struct xdp_tcpdump *skel) { return xdp_tcpdump__load(skel); }
 int xdp_tcpdump::attach(struct xdp_tcpdump *skel) { return xdp_tcpdump__attach(skel); }

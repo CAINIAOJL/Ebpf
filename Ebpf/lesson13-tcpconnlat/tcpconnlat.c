@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
     };
 
     struct perf_buffer* pb = NULL;
-    struct tcpconnlat_bpf* obj;
+    struct tcpconnlat_bpf* skel;
     int err;
 
     err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -229,42 +229,42 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpconnlat_bpf__open();
-    if(!obj) {
-        fprintf(stderr, "failed to open BPF object\n");
+    skel = tcpconnlat_bpf__open();
+    if(!skel) {
+        fprintf(stderr, "failed to open BPF skelect\n");
         return 1;
     }
 
-    obj->rodata->targ_min_us = env.min_us;
-    obj->rodata->targ_pid = env.pid;
+    skel->rodata->targ_min_us = env.min_us;
+    skel->rodata->targ_pid = env.pid;
 
     if(fentry_can_attach("tcp_v4_connect", NULL)) {
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_v4_connect, 0, "tcp_v4_connect");
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_v6_connect, 0, "tcp_v6_connect");
-        bpf_program__set_attach_target(obj->progs.fentry_tcp_rcv_state_process, 0, "tcp_rcv_state_process");
+        bpf_program__set_attach_target(skel->progs.fentry_tcp_v4_connect, 0, "tcp_v4_connect");
+        bpf_program__set_attach_target(skel->progs.fentry_tcp_v6_connect, 0, "tcp_v6_connect");
+        bpf_program__set_attach_target(skel->progs.fentry_tcp_rcv_state_process, 0, "tcp_rcv_state_process");
         
-        bpf_program__set_autoload(obj->progs.tcp_v4_connect, false);
-        bpf_program__set_autoload(obj->progs.tcp_v6_connect, false);
-        bpf_program__set_autoload(obj->progs.tcp_rcv_state_process, false);
+        bpf_program__set_autoload(skel->progs.tcp_v4_connect, false);
+        bpf_program__set_autoload(skel->progs.tcp_v6_connect, false);
+        bpf_program__set_autoload(skel->progs.tcp_rcv_state_process, false);
     } else {
-        bpf_program__set_autoload(obj->progs.fentry_tcp_v4_connect, false);
-        bpf_program__set_autoload(obj->progs.fentry_tcp_v6_connect, false);
-        bpf_program__set_autoload(obj->progs.fentry_tcp_rcv_state_process,false);
+        bpf_program__set_autoload(skel->progs.fentry_tcp_v4_connect, false);
+        bpf_program__set_autoload(skel->progs.fentry_tcp_v6_connect, false);
+        bpf_program__set_autoload(skel->progs.fentry_tcp_rcv_state_process,false);
     }
 
-    err = tcpconnlat_bpf__load(obj);
+    err = tcpconnlat_bpf__load(skel);
     if(err) {
-        fprintf(stderr, "failed to load BPF object: %d\n", err);
+        fprintf(stderr, "failed to load BPF skelect: %d\n", err);
         goto cleanup;
     }
 
-    err = tcpconnlat_bpf__attach(obj);
+    err = tcpconnlat_bpf__attach(skel);
     if(err) {
         fprintf(stderr, "failed to attach BPF programs: %d\n", err);
         goto cleanup;
     }
 
-    pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES, handle_event, handle_lost_event, NULL, NULL);
+    pb = perf_buffer__new(bpf_map__fd(skel->maps.events), PERF_BUFFER_PAGES, handle_event, handle_lost_event, NULL, NULL);
 
     if(!pb) {
         fprintf(stderr, "failed to create perf buffer\n");
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     perf_buffer__free(pb);
-    tcpconnlat_bpf__destroy(obj);
+    tcpconnlat_bpf__destroy(skel);
 
     return err != 0;
 }
@@ -514,7 +514,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
-    struct tcpconnlat* obj;
+    struct tcpconnlat* skel;
     int err;
 
     err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -524,45 +524,45 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpconnlat__open();
-    if (!obj) {
-        fprintf(stderr, "failed to open BPF object\n");
+    skel = tcpconnlat__open();
+    if (!skel) {
+        fprintf(stderr, "failed to open BPF skelect\n");
         return 1;
     }
 
     /* initialize global data (filtering options) */
-    obj->rodata->targ_min_us = env.min_us;
-    obj->rodata->targ_tgid = env.pid;
+    skel->rodata->targ_min_us = env.min_us;
+    skel->rodata->targ_tgid = env.pid;
 
     if (fentry_can_attach("tcp_v4_connect", NULL)) {
-        //bpf_program__set_attach_target(obj->progs.fentry_tcp_v4_connect, 0,
+        //bpf_program__set_attach_target(skel->progs.fentry_tcp_v4_connect, 0,
         //                               "tcp_v4_connect");
-        //bpf_program__set_attach_target(obj->progs.fentry_tcp_v6_connect, 0,
+        //bpf_program__set_attach_target(skel->progs.fentry_tcp_v6_connect, 0,
         //                               "tcp_v6_connect");
-        //bpf_program__set_attach_target(obj->progs.fentry_tcp_rcv_state_process,
+        //bpf_program__set_attach_target(skel->progs.fentry_tcp_rcv_state_process,
         //                               0, "tcp_rcv_state_process");
-        //bpf_program__set_autoload(obj->progs.tcp_v4_connect, false);
-        //bpf_program__set_autoload(obj->progs.tcp_v6_connect, false);
-        //bpf_program__set_autoload(obj->progs.tcp_rcv_state_process, false);
+        //bpf_program__set_autoload(skel->progs.tcp_v4_connect, false);
+        //bpf_program__set_autoload(skel->progs.tcp_v6_connect, false);
+        //bpf_program__set_autoload(skel->progs.tcp_rcv_state_process, false);
     } else {
-        bpf_program__set_autoload(obj->progs.fentry_tcp_v4_connect, false);
-        bpf_program__set_autoload(obj->progs.fentry_tcp_v6_connect, false);
-        bpf_program__set_autoload(obj->progs.fentry_tcp_rcv_state_process,
+        bpf_program__set_autoload(skel->progs.fentry_tcp_v4_connect, false);
+        bpf_program__set_autoload(skel->progs.fentry_tcp_v6_connect, false);
+        bpf_program__set_autoload(skel->progs.fentry_tcp_rcv_state_process,
                                   false);
     }
 
-    err = tcpconnlat__load(obj);
+    err = tcpconnlat__load(skel);
     if (err) {
-        fprintf(stderr, "failed to load BPF object: %d\n", err);
+        fprintf(stderr, "failed to load BPF skelect: %d\n", err);
         goto cleanup;
     }
 
-    err = tcpconnlat__attach(obj);
+    err = tcpconnlat__attach(skel);
     if (err) {
         goto cleanup;
     }
 
-    pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES,
+    pb = perf_buffer__new(bpf_map__fd(skel->maps.events), PERF_BUFFER_PAGES,
                           handle_event, handle_lost_events, NULL, NULL);
     if (!pb) {
         fprintf(stderr, "failed to open perf buffer: %d\n", errno);
@@ -599,7 +599,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     perf_buffer__free(pb);
-    tcpconnlat__destroy(obj);
+    tcpconnlat__destroy(skel);
 
     return err != 0;
 }

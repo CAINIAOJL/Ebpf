@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct sudoadd {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *map_fds;
 		struct bpf_map *map_buff_addrs;
@@ -40,7 +40,7 @@ struct sudoadd {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct sudoadd *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct sudoadd *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct sudoadd *open_and_load();
 	static inline int load(struct sudoadd *skel);
 	static inline int attach(struct sudoadd *skel);
@@ -51,41 +51,41 @@ struct sudoadd {
 };
 
 static void
-sudoadd__destroy(struct sudoadd *obj)
+sudoadd__destroy(struct sudoadd *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-sudoadd__create_skeleton(struct sudoadd *obj);
+sudoadd__create_skeleton(struct sudoadd *skel);
 
 static inline struct sudoadd *
-sudoadd__open_opts(const struct bpf_object_open_opts *opts)
+sudoadd__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct sudoadd *obj;
+	struct sudoadd *skel;
 	int err;
 
-	obj = (struct sudoadd *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct sudoadd *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = sudoadd__create_skeleton(obj);
+	err = sudoadd__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	sudoadd__destroy(obj);
+	sudoadd__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -97,50 +97,50 @@ sudoadd__open(void)
 }
 
 static inline int
-sudoadd__load(struct sudoadd *obj)
+sudoadd__load(struct sudoadd *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct sudoadd *
 sudoadd__open_and_load(void)
 {
-	struct sudoadd *obj;
+	struct sudoadd *skel;
 	int err;
 
-	obj = sudoadd__open();
-	if (!obj)
+	skel = sudoadd__open();
+	if (!skel)
 		return NULL;
-	err = sudoadd__load(obj);
+	err = sudoadd__load(skel);
 	if (err) {
-		sudoadd__destroy(obj);
+		sudoadd__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-sudoadd__attach(struct sudoadd *obj)
+sudoadd__attach(struct sudoadd *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-sudoadd__detach(struct sudoadd *obj)
+sudoadd__detach(struct sudoadd *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *sudoadd__elf_bytes(size_t *sz);
 
 static inline int
-sudoadd__create_skeleton(struct sudoadd *obj)
+sudoadd__create_skeleton(struct sudoadd *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -148,7 +148,7 @@ sudoadd__create_skeleton(struct sudoadd *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "sudoadd";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 4;
@@ -160,17 +160,17 @@ sudoadd__create_skeleton(struct sudoadd *obj)
 	}
 
 	s->maps[0].name = "map_fds";
-	s->maps[0].map = &obj->maps.map_fds;
+	s->maps[0].map = &skel->maps.map_fds;
 
 	s->maps[1].name = "map_buff_addrs";
-	s->maps[1].map = &obj->maps.map_buff_addrs;
+	s->maps[1].map = &skel->maps.map_buff_addrs;
 
 	s->maps[2].name = "rb";
-	s->maps[2].map = &obj->maps.rb;
+	s->maps[2].map = &skel->maps.rb;
 
 	s->maps[3].name = "sudoadd.rodata";
-	s->maps[3].map = &obj->maps.rodata;
-	s->maps[3].mmaped = (void **)&obj->rodata;
+	s->maps[3].map = &skel->maps.rodata;
+	s->maps[3].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 5;
@@ -182,31 +182,31 @@ sudoadd__create_skeleton(struct sudoadd *obj)
 	}
 
 	s->progs[0].name = "handle_openat_enter";
-	s->progs[0].prog = &obj->progs.handle_openat_enter;
-	s->progs[0].link = &obj->links.handle_openat_enter;
+	s->progs[0].prog = &skel->progs.handle_openat_enter;
+	s->progs[0].link = &skel->links.handle_openat_enter;
 
 	s->progs[1].name = "handle_openat_exit";
-	s->progs[1].prog = &obj->progs.handle_openat_exit;
-	s->progs[1].link = &obj->links.handle_openat_exit;
+	s->progs[1].prog = &skel->progs.handle_openat_exit;
+	s->progs[1].link = &skel->links.handle_openat_exit;
 
 	s->progs[2].name = "handle_read_enter";
-	s->progs[2].prog = &obj->progs.handle_read_enter;
-	s->progs[2].link = &obj->links.handle_read_enter;
+	s->progs[2].prog = &skel->progs.handle_read_enter;
+	s->progs[2].link = &skel->links.handle_read_enter;
 
 	s->progs[3].name = "handle_read_exit";
-	s->progs[3].prog = &obj->progs.handle_read_exit;
-	s->progs[3].link = &obj->links.handle_read_exit;
+	s->progs[3].prog = &skel->progs.handle_read_exit;
+	s->progs[3].link = &skel->links.handle_read_exit;
 
 	s->progs[4].name = "handle_close_exit";
-	s->progs[4].prog = &obj->progs.handle_close_exit;
-	s->progs[4].link = &obj->links.handle_close_exit;
+	s->progs[4].prog = &skel->progs.handle_close_exit;
+	s->progs[4].link = &skel->links.handle_close_exit;
 
 	s->data = sudoadd__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -36668,7 +36668,7 @@ static inline const void *sudoadd__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct sudoadd *sudoadd::open(const struct bpf_object_open_opts *opts) { return sudoadd__open_opts(opts); }
+struct sudoadd *sudoadd::open(const struct bpf_skelect_open_opts *opts) { return sudoadd__open_opts(opts); }
 struct sudoadd *sudoadd::open_and_load() { return sudoadd__open_and_load(); }
 int sudoadd::load(struct sudoadd *skel) { return sudoadd__load(skel); }
 int sudoadd::attach(struct sudoadd *skel) { return sudoadd__attach(skel); }

@@ -1,4 +1,4 @@
-obj-m += hello.o
+skel-m += hello.o
 
 KBUILD_CFLAGS += -g -O2
 

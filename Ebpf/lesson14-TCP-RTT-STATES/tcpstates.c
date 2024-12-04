@@ -174,7 +174,7 @@ static void handle_lost_events(void* ctx, int cpu, __u64 lost_cnt) {
 }
 
 int main(int argc, char** argv) {
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
     static const struct argp argp = {
         .args_doc = argp_program_doc,
         .options = opts,
@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
     };
 
     struct perf_buffer *pb = NULL;
-    struct tcpstates_bpf* obj;
+    struct tcpstates_bpf* skel;
     int err, port_map_fd;
     short port_num;
     char *port;
@@ -196,24 +196,24 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpstates_bpf__open_opts(&open_opts);
-    if(!obj) {
-        warn("failed to open BPF object\n");
+    skel = tcpstates_bpf__open_opts(&open_opts);
+    if(!skel) {
+        warn("failed to open BPF skelect\n");
         return 1;
     }
 
-    obj->rodata->filter_by_sport = target_sports != NULL;
-    obj->rodata->filter_by_dport = target_dports != NULL;
-    obj->rodata->target_family = target_family;
+    skel->rodata->filter_by_sport = target_sports != NULL;
+    skel->rodata->filter_by_dport = target_dports != NULL;
+    skel->rodata->target_family = target_family;
 
-    err = tcpstates_bpf__load(obj);
+    err = tcpstates_bpf__load(skel);
     if(err) {
-        warn("failed to load BPF object: %d\n", err);
+        warn("failed to load BPF skelect: %d\n", err);
         goto cleanup;
     }
 
     if(target_sports) {
-        port_map_fd = bpf_map__fd(obj->maps.sports);
+        port_map_fd = bpf_map__fd(skel->maps.sports);
         port = strtok(target_sports, ",");
         while(port) {
             port_num = strtol(port, NULL, 10);
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
     }
 
     if(target_dports) {
-        port_map_fd = bpf_map__fd(obj->maps.dports);
+        port_map_fd = bpf_map__fd(skel->maps.dports);
         port = strtok(target_dports, ",");
         while(port) {
             port_num = strtol(port, NULL, 10);
@@ -233,13 +233,13 @@ int main(int argc, char** argv) {
     }
 
 
-    err = tcpstates_bpf__attach(obj);
+    err = tcpstates_bpf__attach(skel);
     if(err) {
         warn("failed to attach BPF programs: %d\n", err);
         goto cleanup;
     }
 
-    pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES, handle_event, handle_lost_events, NULL, NULL);
+    pb = perf_buffer__new(bpf_map__fd(skel->maps.events), PERF_BUFFER_PAGES, handle_event, handle_lost_events, NULL, NULL);
     if(!pb) {
         err = -errno;
         warn("failed to open perf buffer: %d\n", err);
@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
     }
 cleanup:
     perf_buffer__free(pb);
-    tcpstates_bpf__destroy(obj);
+    tcpstates_bpf__destroy(skel);
 
     return err != 0;
 }
@@ -492,14 +492,14 @@ static void handle_lost_events(void* ctx, int cpu, __u64 lost_cnt) {
 }
 
 int main(int argc, char** argv) {
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
     static const struct argp argp = {
         .options = opts,
         .parser = parse_arg,
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
-    struct tcpstates_bpf* obj;
+    struct tcpstates_bpf* skel;
     int err, port_map_fd;
     short port_num;
     char* port;
@@ -511,24 +511,24 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcpstates_bpf__open_opts(&open_opts);
-    if (!obj) {
-        warn("failed to open BPF object\n");
+    skel = tcpstates_bpf__open_opts(&open_opts);
+    if (!skel) {
+        warn("failed to open BPF skelect\n");
         return 1;
     }
 
-    obj->rodata->filter_by_sport = target_sports != NULL;
-    obj->rodata->filter_by_dport = target_dports != NULL;
-    obj->rodata->target_family = target_family;
+    skel->rodata->filter_by_sport = target_sports != NULL;
+    skel->rodata->filter_by_dport = target_dports != NULL;
+    skel->rodata->target_family = target_family;
 
-    err = tcpstates_bpf__load(obj);
+    err = tcpstates_bpf__load(skel);
     if (err) {
-        warn("failed to load BPF object: %d\n", err);
+        warn("failed to load BPF skelect: %d\n", err);
         goto cleanup;
     }
 
     if (target_sports) {
-        port_map_fd = bpf_map__fd(obj->maps.sports);
+        port_map_fd = bpf_map__fd(skel->maps.sports);
         port = strtok(target_sports, ",");
         while (port) {
             port_num = strtol(port, NULL, 10);
@@ -537,7 +537,7 @@ int main(int argc, char** argv) {
         }
     }
     if (target_dports) {
-        port_map_fd = bpf_map__fd(obj->maps.dports);
+        port_map_fd = bpf_map__fd(skel->maps.dports);
         port = strtok(target_dports, ",");
         while (port) {
             port_num = strtol(port, NULL, 10);
@@ -546,13 +546,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    err = tcpstates_bpf__attach(obj);
+    err = tcpstates_bpf__attach(skel);
     if (err) {
         warn("failed to attach BPF programs: %d\n", err);
         goto cleanup;
     }
 
-    pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES,
+    pb = perf_buffer__new(bpf_map__fd(skel->maps.events), PERF_BUFFER_PAGES,
                           handle_event, handle_lost_events, NULL, NULL);
     if (!pb) {
         err = -errno;
@@ -590,7 +590,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     perf_buffer__free(pb);
-    tcpstates_bpf__destroy(obj);
+    tcpstates_bpf__destroy(skel);
 
     return err != 0;
 } */

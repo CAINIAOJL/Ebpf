@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
     skel = sudoadd__open();
     if(!skel) {
-        fprintf(stderr, "Failed to open BPF object: %s\n", strerror(errno));
+        fprintf(stderr, "Failed to open BPF skelect: %s\n", strerror(errno));
         return 1;
     }
 
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
     err = sudoadd__load(skel);
 
     if(err) {
-        fprintf(stderr, "Failed to load and attach BPF object\n");
+        fprintf(stderr, "Failed to load and attach BPF skelect\n");
         goto cleanup;
     }
 

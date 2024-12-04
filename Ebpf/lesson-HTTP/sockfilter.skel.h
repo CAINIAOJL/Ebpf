@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct sockfilter {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *rb;
 		struct bpf_map *rodata;
@@ -24,7 +24,7 @@ struct sockfilter {
 	} links;
 
 #ifdef __cplusplus
-	static inline struct sockfilter *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct sockfilter *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct sockfilter *open_and_load();
 	static inline int load(struct sockfilter *skel);
 	static inline int attach(struct sockfilter *skel);
@@ -35,41 +35,41 @@ struct sockfilter {
 };
 
 static void
-sockfilter__destroy(struct sockfilter *obj)
+sockfilter__destroy(struct sockfilter *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-sockfilter__create_skeleton(struct sockfilter *obj);
+sockfilter__create_skeleton(struct sockfilter *skel);
 
 static inline struct sockfilter *
-sockfilter__open_opts(const struct bpf_object_open_opts *opts)
+sockfilter__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct sockfilter *obj;
+	struct sockfilter *skel;
 	int err;
 
-	obj = (struct sockfilter *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct sockfilter *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = sockfilter__create_skeleton(obj);
+	err = sockfilter__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	sockfilter__destroy(obj);
+	sockfilter__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -81,50 +81,50 @@ sockfilter__open(void)
 }
 
 static inline int
-sockfilter__load(struct sockfilter *obj)
+sockfilter__load(struct sockfilter *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct sockfilter *
 sockfilter__open_and_load(void)
 {
-	struct sockfilter *obj;
+	struct sockfilter *skel;
 	int err;
 
-	obj = sockfilter__open();
-	if (!obj)
+	skel = sockfilter__open();
+	if (!skel)
 		return NULL;
-	err = sockfilter__load(obj);
+	err = sockfilter__load(skel);
 	if (err) {
-		sockfilter__destroy(obj);
+		sockfilter__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-sockfilter__attach(struct sockfilter *obj)
+sockfilter__attach(struct sockfilter *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-sockfilter__detach(struct sockfilter *obj)
+sockfilter__detach(struct sockfilter *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *sockfilter__elf_bytes(size_t *sz);
 
 static inline int
-sockfilter__create_skeleton(struct sockfilter *obj)
+sockfilter__create_skeleton(struct sockfilter *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -132,7 +132,7 @@ sockfilter__create_skeleton(struct sockfilter *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "sockfilter";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -144,13 +144,13 @@ sockfilter__create_skeleton(struct sockfilter *obj)
 	}
 
 	s->maps[0].name = "rb";
-	s->maps[0].map = &obj->maps.rb;
+	s->maps[0].map = &skel->maps.rb;
 
 	s->maps[1].name = "sockfilt.rodata";
-	s->maps[1].map = &obj->maps.rodata;
+	s->maps[1].map = &skel->maps.rodata;
 
 	s->maps[2].name = ".rodata.str1.1";
-	s->maps[2].map = &obj->maps.rodata_str1_1;
+	s->maps[2].map = &skel->maps.rodata_str1_1;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -162,15 +162,15 @@ sockfilter__create_skeleton(struct sockfilter *obj)
 	}
 
 	s->progs[0].name = "socket_handler";
-	s->progs[0].prog = &obj->progs.socket_handler;
-	s->progs[0].link = &obj->links.socket_handler;
+	s->progs[0].prog = &skel->progs.socket_handler;
+	s->progs[0].link = &skel->links.socket_handler;
 
 	s->data = sockfilter__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -956,7 +956,7 @@ static inline const void *sockfilter__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct sockfilter *sockfilter::open(const struct bpf_object_open_opts *opts) { return sockfilter__open_opts(opts); }
+struct sockfilter *sockfilter::open(const struct bpf_skelect_open_opts *opts) { return sockfilter__open_opts(opts); }
 struct sockfilter *sockfilter::open_and_load() { return sockfilter__open_and_load(); }
 int sockfilter::load(struct sockfilter *skel) { return sockfilter__load(skel); }
 int sockfilter::attach(struct sockfilter *skel) { return sockfilter__attach(skel); }

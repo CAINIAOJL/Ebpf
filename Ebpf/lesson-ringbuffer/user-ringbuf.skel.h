@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct user_ringbuf {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *user_ringbuf;
 		struct bpf_map *kernel_ringbuf;
@@ -27,7 +27,7 @@ struct user_ringbuf {
 	} *bss;
 
 #ifdef __cplusplus
-	static inline struct user_ringbuf *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct user_ringbuf *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct user_ringbuf *open_and_load();
 	static inline int load(struct user_ringbuf *skel);
 	static inline int attach(struct user_ringbuf *skel);
@@ -38,41 +38,41 @@ struct user_ringbuf {
 };
 
 static void
-user_ringbuf__destroy(struct user_ringbuf *obj)
+user_ringbuf__destroy(struct user_ringbuf *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-user_ringbuf__create_skeleton(struct user_ringbuf *obj);
+user_ringbuf__create_skeleton(struct user_ringbuf *skel);
 
 static inline struct user_ringbuf *
-user_ringbuf__open_opts(const struct bpf_object_open_opts *opts)
+user_ringbuf__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct user_ringbuf *obj;
+	struct user_ringbuf *skel;
 	int err;
 
-	obj = (struct user_ringbuf *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct user_ringbuf *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = user_ringbuf__create_skeleton(obj);
+	err = user_ringbuf__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	user_ringbuf__destroy(obj);
+	user_ringbuf__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -84,50 +84,50 @@ user_ringbuf__open(void)
 }
 
 static inline int
-user_ringbuf__load(struct user_ringbuf *obj)
+user_ringbuf__load(struct user_ringbuf *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct user_ringbuf *
 user_ringbuf__open_and_load(void)
 {
-	struct user_ringbuf *obj;
+	struct user_ringbuf *skel;
 	int err;
 
-	obj = user_ringbuf__open();
-	if (!obj)
+	skel = user_ringbuf__open();
+	if (!skel)
 		return NULL;
-	err = user_ringbuf__load(obj);
+	err = user_ringbuf__load(skel);
 	if (err) {
-		user_ringbuf__destroy(obj);
+		user_ringbuf__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-user_ringbuf__attach(struct user_ringbuf *obj)
+user_ringbuf__attach(struct user_ringbuf *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-user_ringbuf__detach(struct user_ringbuf *obj)
+user_ringbuf__detach(struct user_ringbuf *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *user_ringbuf__elf_bytes(size_t *sz);
 
 static inline int
-user_ringbuf__create_skeleton(struct user_ringbuf *obj)
+user_ringbuf__create_skeleton(struct user_ringbuf *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -135,7 +135,7 @@ user_ringbuf__create_skeleton(struct user_ringbuf *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "user_ringbuf";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -147,14 +147,14 @@ user_ringbuf__create_skeleton(struct user_ringbuf *obj)
 	}
 
 	s->maps[0].name = "user_ringbuf";
-	s->maps[0].map = &obj->maps.user_ringbuf;
+	s->maps[0].map = &skel->maps.user_ringbuf;
 
 	s->maps[1].name = "kernel_ringbuf";
-	s->maps[1].map = &obj->maps.kernel_ringbuf;
+	s->maps[1].map = &skel->maps.kernel_ringbuf;
 
 	s->maps[2].name = "user_rin.bss";
-	s->maps[2].map = &obj->maps.bss;
-	s->maps[2].mmaped = (void **)&obj->bss;
+	s->maps[2].map = &skel->maps.bss;
+	s->maps[2].mmaped = (void **)&skel->bss;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -166,15 +166,15 @@ user_ringbuf__create_skeleton(struct user_ringbuf *obj)
 	}
 
 	s->progs[0].name = "kill_exit";
-	s->progs[0].prog = &obj->progs.kill_exit;
-	s->progs[0].link = &obj->links.kill_exit;
+	s->progs[0].prog = &skel->progs.kill_exit;
+	s->progs[0].link = &skel->links.kill_exit;
 
 	s->data = user_ringbuf__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -515,7 +515,7 @@ static inline const void *user_ringbuf__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct user_ringbuf *user_ringbuf::open(const struct bpf_object_open_opts *opts) { return user_ringbuf__open_opts(opts); }
+struct user_ringbuf *user_ringbuf::open(const struct bpf_skelect_open_opts *opts) { return user_ringbuf__open_opts(opts); }
 struct user_ringbuf *user_ringbuf::open_and_load() { return user_ringbuf__open_and_load(); }
 int user_ringbuf::load(struct user_ringbuf *skel) { return user_ringbuf__load(skel); }
 int user_ringbuf::attach(struct user_ringbuf *skel) { return user_ringbuf__attach(skel); }

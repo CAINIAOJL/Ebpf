@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct trace {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *syscall_count_map;
 	} maps;
@@ -22,7 +22,7 @@ struct trace {
 	} links;
 
 #ifdef __cplusplus
-	static inline struct trace *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct trace *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct trace *open_and_load();
 	static inline int load(struct trace *skel);
 	static inline int attach(struct trace *skel);
@@ -33,41 +33,41 @@ struct trace {
 };
 
 static void
-trace__destroy(struct trace *obj)
+trace__destroy(struct trace *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-trace__create_skeleton(struct trace *obj);
+trace__create_skeleton(struct trace *skel);
 
 static inline struct trace *
-trace__open_opts(const struct bpf_object_open_opts *opts)
+trace__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct trace *obj;
+	struct trace *skel;
 	int err;
 
-	obj = (struct trace *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct trace *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = trace__create_skeleton(obj);
+	err = trace__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	trace__destroy(obj);
+	trace__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -79,50 +79,50 @@ trace__open(void)
 }
 
 static inline int
-trace__load(struct trace *obj)
+trace__load(struct trace *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct trace *
 trace__open_and_load(void)
 {
-	struct trace *obj;
+	struct trace *skel;
 	int err;
 
-	obj = trace__open();
-	if (!obj)
+	skel = trace__open();
+	if (!skel)
 		return NULL;
-	err = trace__load(obj);
+	err = trace__load(skel);
 	if (err) {
-		trace__destroy(obj);
+		trace__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-trace__attach(struct trace *obj)
+trace__attach(struct trace *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-trace__detach(struct trace *obj)
+trace__detach(struct trace *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *trace__elf_bytes(size_t *sz);
 
 static inline int
-trace__create_skeleton(struct trace *obj)
+trace__create_skeleton(struct trace *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -130,7 +130,7 @@ trace__create_skeleton(struct trace *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "trace";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 1;
@@ -142,7 +142,7 @@ trace__create_skeleton(struct trace *obj)
 	}
 
 	s->maps[0].name = "syscall_count_map";
-	s->maps[0].map = &obj->maps.syscall_count_map;
+	s->maps[0].map = &skel->maps.syscall_count_map;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -154,15 +154,15 @@ trace__create_skeleton(struct trace *obj)
 	}
 
 	s->progs[0].name = "count_sys_enter";
-	s->progs[0].prog = &obj->progs.count_sys_enter;
-	s->progs[0].link = &obj->links.count_sys_enter;
+	s->progs[0].prog = &skel->progs.count_sys_enter;
+	s->progs[0].link = &skel->links.count_sys_enter;
 
 	s->data = trace__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -373,7 +373,7 @@ static inline const void *trace__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct trace *trace::open(const struct bpf_object_open_opts *opts) { return trace__open_opts(opts); }
+struct trace *trace::open(const struct bpf_skelect_open_opts *opts) { return trace__open_opts(opts); }
 struct trace *trace::open_and_load() { return trace__open_and_load(); }
 int trace::load(struct trace *skel) { return trace__load(skel); }
 int trace::attach(struct trace *skel) { return trace__attach(skel); }

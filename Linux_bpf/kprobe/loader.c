@@ -21,26 +21,26 @@ void bump_memlock_rlimit() {
 }
 
 int main(int argc, char** argv) {
-    struct bpf_object* obj;
+    struct bpf_skelect* skel;
     int prog_fd;
 
     //提升资源限制
     bump_memlock_rlimit();
 
     //挂载bpf程序
-    obj = bpf_object__open_file("kprobe.bpf.o", NULL);
-    if(libbpf_get_error(obj)) {
-        fprintf(stderr, "ERROR: opening BPF object file failed: %s\n", strerror(errno));
+    skel = bpf_skelect__open_file("kprobe.bpf.o", NULL);
+    if(libbpf_get_error(skel)) {
+        fprintf(stderr, "ERROR: opening BPF skelect file failed: %s\n", strerror(errno));
         return 1;
     }
 
     //加载bpf对象到内核
-    if(bpf_object__load(obj)) {
-        fprintf(stderr, "ERROR: loading BPF object file failed: %s\n", strerror(errno));
+    if(bpf_skelect__load(skel)) {
+        fprintf(stderr, "ERROR: loading BPF skelect file failed: %s\n", strerror(errno));
         return 1;
     }
 
-    struct bpf_program* prog = bpf_object__find_program_by_name(obj, "do_sys_execve");
+    struct bpf_program* prog = bpf_skelect__find_program_by_name(skel, "do_sys_execve");
     if(!prog) {
         fprintf(stderr, "ERROR: finding BPF program failed: %s\n", strerror(errno));
         return 1;
@@ -59,6 +59,6 @@ int main(int argc, char** argv) {
 
     system("cat /sys/kernel/debug/tracing/trace_pipe");
 
-    bpf_object__close(obj);
+    bpf_skelect__close(skel);
     return 0;
 }

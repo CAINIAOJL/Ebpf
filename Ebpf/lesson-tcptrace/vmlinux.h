@@ -810,7 +810,7 @@ struct ftrace_ret_stack;
 
 struct mem_cgroup;
 
-struct obj_cgroup;
+struct skel_cgroup;
 
 struct gendisk;
 
@@ -1064,7 +1064,7 @@ struct task_struct {
 	int memcg_oom_order;
 	unsigned int memcg_nr_pages_over_high;
 	struct mem_cgroup *active_memcg;
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 	struct gendisk *throttle_disk;
 	struct uprobe_task *utask;
 	unsigned int sequential_io;
@@ -1525,7 +1525,7 @@ struct file_system_type {
 	struct lock_class_key i_mutex_dir_key;
 };
 
-struct kobject;
+struct kskelect;
 
 struct attribute;
 
@@ -1533,8 +1533,8 @@ struct bin_attribute;
 
 struct attribute_group {
 	const char *name;
-	umode_t (*is_visible)(struct kobject *, struct attribute *, int);
-	umode_t (*is_bin_visible)(struct kobject *, struct bin_attribute *, int);
+	umode_t (*is_visible)(struct kskelect *, struct attribute *, int);
+	umode_t (*is_bin_visible)(struct kskelect *, struct bin_attribute *, int);
 	struct attribute **attrs;
 	struct bin_attribute **bin_attrs;
 };
@@ -1930,16 +1930,16 @@ struct kref {
 
 struct kset;
 
-struct kobj_type;
+struct kskel_type;
 
 struct kernfs_node;
 
-struct kobject {
+struct kskelect {
 	const char *name;
 	struct list_head entry;
-	struct kobject *parent;
+	struct kskelect *parent;
 	struct kset *kset;
-	const struct kobj_type *ktype;
+	const struct kskel_type *ktype;
 	struct kernfs_node *sd;
 	struct kref kref;
 	unsigned int state_initialized: 1;
@@ -1951,12 +1951,12 @@ struct kobject {
 
 struct module_param_attrs;
 
-struct module_kobject {
-	struct kobject kobj;
+struct module_kskelect {
+	struct kskelect kskel;
 	struct module *mod;
-	struct kobject *drivers_dir;
+	struct kskelect *drivers_dir;
 	struct module_param_attrs *mp;
-	struct completion *kobj_completion;
+	struct completion *kskel_completion;
 };
 
 struct latch_tree_node {
@@ -2028,11 +2028,11 @@ struct module {
 	enum module_state state;
 	struct list_head list;
 	char name[56];
-	struct module_kobject mkobj;
+	struct module_kskelect mkskel;
 	struct module_attribute *modinfo_attrs;
 	const char *version;
 	const char *srcversion;
-	struct kobject *holders_dir;
+	struct kskelect *holders_dir;
 	const struct kernel_symbol *syms;
 	const s32 *crcs;
 	unsigned int num_syms;
@@ -3642,16 +3642,16 @@ struct poll_table_struct {
 	__poll_t _key;
 };
 
-enum kobj_ns_type {
-	KOBJ_NS_TYPE_NONE = 0,
-	KOBJ_NS_TYPE_NET = 1,
-	KOBJ_NS_TYPES = 2,
+enum kskel_ns_type {
+	Kskel_NS_TYPE_NONE = 0,
+	Kskel_NS_TYPE_NET = 1,
+	Kskel_NS_TYPES = 2,
 };
 
 struct sock;
 
-struct kobj_ns_type_operations {
-	enum kobj_ns_type type;
+struct kskel_ns_type_operations {
+	enum kskel_ns_type type;
 	bool (*current_may_mount)();
 	void * (*grab_current_ns)();
 	const void * (*netlink_ns)(struct sock *);
@@ -3693,15 +3693,15 @@ struct bin_attribute {
 	size_t size;
 	void *private;
 	struct address_space * (*f_mapping)();
-	ssize_t (*read)(struct file *, struct kobject *, struct bin_attribute *, char *, loff_t, size_t);
-	ssize_t (*write)(struct file *, struct kobject *, struct bin_attribute *, char *, loff_t, size_t);
-	loff_t (*llseek)(struct file *, struct kobject *, struct bin_attribute *, loff_t, int);
-	int (*mmap)(struct file *, struct kobject *, struct bin_attribute *, struct vm_area_struct *);
+	ssize_t (*read)(struct file *, struct kskelect *, struct bin_attribute *, char *, loff_t, size_t);
+	ssize_t (*write)(struct file *, struct kskelect *, struct bin_attribute *, char *, loff_t, size_t);
+	loff_t (*llseek)(struct file *, struct kskelect *, struct bin_attribute *, loff_t, int);
+	int (*mmap)(struct file *, struct kskelect *, struct bin_attribute *, struct vm_area_struct *);
 };
 
 struct sysfs_ops {
-	ssize_t (*show)(struct kobject *, struct attribute *, char *);
-	ssize_t (*store)(struct kobject *, struct attribute *, const char *, size_t);
+	ssize_t (*show)(struct kskelect *, struct attribute *, char *);
+	ssize_t (*store)(struct kskelect *, struct attribute *, const char *, size_t);
 };
 
 struct kset_uevent_ops;
@@ -3709,20 +3709,20 @@ struct kset_uevent_ops;
 struct kset {
 	struct list_head list;
 	spinlock_t list_lock;
-	struct kobject kobj;
+	struct kskelect kskel;
 	const struct kset_uevent_ops *uevent_ops;
 };
 
-struct kobj_type {
-	void (*release)(struct kobject *);
+struct kskel_type {
+	void (*release)(struct kskelect *);
 	const struct sysfs_ops *sysfs_ops;
 	const struct attribute_group **default_groups;
-	const struct kobj_ns_type_operations * (*child_ns_type)(const struct kobject *);
-	const void * (*namespace)(const struct kobject *);
-	void (*get_ownership)(const struct kobject *, kuid_t *, kgid_t *);
+	const struct kskel_ns_type_operations * (*child_ns_type)(const struct kskelect *);
+	const void * (*namespace)(const struct kskelect *);
+	void (*get_ownership)(const struct kskelect *, kuid_t *, kgid_t *);
 };
 
-struct kobj_uevent_env {
+struct kskel_uevent_env {
 	char *argv[3];
 	char *envp[64];
 	int envp_idx;
@@ -3731,9 +3731,9 @@ struct kobj_uevent_env {
 };
 
 struct kset_uevent_ops {
-	int (* const filter)(const struct kobject *);
-	const char * (* const name)(const struct kobject *);
-	int (* const uevent)(const struct kobject *, struct kobj_uevent_env *);
+	int (* const filter)(const struct kskelect *);
+	const char * (* const name)(const struct kskelect *);
+	int (* const uevent)(const struct kskelect *, struct kskel_uevent_env *);
 };
 
 struct em_perf_state {
@@ -3904,7 +3904,7 @@ struct dev_iommu;
 struct device_physical_location;
 
 struct device {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct device *parent;
 	struct device_private *p;
 	const char *init_name;
@@ -4062,7 +4062,7 @@ struct bus_type {
 	const struct attribute_group **dev_groups;
 	const struct attribute_group **drv_groups;
 	int (*match)(struct device *, struct device_driver *);
-	int (*uevent)(const struct device *, struct kobj_uevent_env *);
+	int (*uevent)(const struct device *, struct kskel_uevent_env *);
 	int (*probe)(struct device *);
 	void (*sync_state)(struct device *);
 	void (*remove)(struct device *);
@@ -4116,12 +4116,12 @@ struct class {
 	const char *name;
 	const struct attribute_group **class_groups;
 	const struct attribute_group **dev_groups;
-	int (*dev_uevent)(const struct device *, struct kobj_uevent_env *);
+	int (*dev_uevent)(const struct device *, struct kskel_uevent_env *);
 	char * (*devnode)(const struct device *, umode_t *);
 	void (*class_release)(const struct class *);
 	void (*dev_release)(struct device *);
 	int (*shutdown_pre)(struct device *);
-	const struct kobj_ns_type_operations *ns_type;
+	const struct kskel_ns_type_operations *ns_type;
 	const void * (*namespace)(const struct device *);
 	void (*get_ownership)(const struct device *, kuid_t *, kgid_t *);
 	const struct dev_pm_ops *pm;
@@ -4130,7 +4130,7 @@ struct class {
 struct device_type {
 	const char *name;
 	const struct attribute_group **groups;
-	int (*uevent)(const struct device *, struct kobj_uevent_env *);
+	int (*uevent)(const struct device *, struct kskel_uevent_env *);
 	char * (*devnode)(const struct device *, umode_t *, kuid_t *, kgid_t *);
 	void (*release)(struct device *);
 	const struct dev_pm_ops *pm;
@@ -4571,8 +4571,8 @@ struct shrink_control {
 };
 
 struct shrinker {
-	long unsigned int (*count_objects)(struct shrinker *, struct shrink_control *);
-	long unsigned int (*scan_objects)(struct shrinker *, struct shrink_control *);
+	long unsigned int (*count_skelects)(struct shrinker *, struct shrink_control *);
+	long unsigned int (*scan_skelects)(struct shrinker *, struct shrink_control *);
 	long int batch;
 	int seeks;
 	unsigned int flags;
@@ -5172,8 +5172,8 @@ struct super_operations {
 	ssize_t (*quota_read)(struct super_block *, int, char *, size_t, loff_t);
 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
 	struct dquot ** (*get_dquots)(struct inode *);
-	long int (*nr_cached_objects)(struct super_block *, struct shrink_control *);
-	long int (*free_cached_objects)(struct super_block *, struct shrink_control *);
+	long int (*nr_cached_skelects)(struct super_block *, struct shrink_control *);
+	long int (*free_cached_skelects)(struct super_block *, struct shrink_control *);
 	void (*shutdown)(struct super_block *);
 };
 
@@ -5345,8 +5345,8 @@ struct error_injection_entry {
 
 struct module_attribute {
 	struct attribute attr;
-	ssize_t (*show)(struct module_attribute *, struct module_kobject *, char *);
-	ssize_t (*store)(struct module_attribute *, struct module_kobject *, const char *, size_t);
+	ssize_t (*show)(struct module_attribute *, struct module_kskelect *, char *);
+	ssize_t (*store)(struct module_attribute *, struct module_kskelect *, const char *, size_t);
 	void (*setup)(struct module *, const char *);
 	int (*test)(struct module *);
 	void (*free)(struct module *);
@@ -7331,9 +7331,9 @@ struct rhashtable_compare_arg {
 
 typedef u32 (*rht_hashfn_t)(const void *, u32, u32);
 
-typedef u32 (*rht_obj_hashfn_t)(const void *, u32, u32);
+typedef u32 (*rht_skel_hashfn_t)(const void *, u32, u32);
 
-typedef int (*rht_obj_cmpfn_t)(struct rhashtable_compare_arg *, const void *);
+typedef int (*rht_skel_cmpfn_t)(struct rhashtable_compare_arg *, const void *);
 
 struct rhashtable_params {
 	u16 nelem_hint;
@@ -7344,8 +7344,8 @@ struct rhashtable_params {
 	u16 min_size;
 	bool automatic_shrinking;
 	rht_hashfn_t hashfn;
-	rht_obj_hashfn_t obj_hashfn;
-	rht_obj_cmpfn_t obj_cmpfn;
+	rht_skel_hashfn_t skel_hashfn;
+	rht_skel_cmpfn_t skel_cmpfn;
 };
 
 struct bucket_table;
@@ -8898,9 +8898,9 @@ struct mem_cgroup {
 	bool tcpmem_active;
 	int tcpmem_pressure;
 	int kmemcg_id;
-	struct obj_cgroup *objcg;
-	struct obj_cgroup *orig_objcg;
-	struct list_head objcg_list;
+	struct skel_cgroup *skelcg;
+	struct skel_cgroup *orig_skelcg;
+	struct list_head skelcg_list;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -8927,7 +8927,7 @@ struct mem_cgroup {
 	long: 64;
 };
 
-struct obj_cgroup {
+struct skel_cgroup {
 	struct percpu_ref refcnt;
 	struct mem_cgroup *memcg;
 	atomic_t nr_charged_bytes;
@@ -9280,7 +9280,7 @@ struct writeback_control {
 };
 
 struct cdev {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct module *owner;
 	const struct file_operations *ops;
 	struct list_head list;
@@ -9372,7 +9372,7 @@ struct block_device {
 	const struct blk_holder_ops *bd_holder_ops;
 	struct mutex bd_holder_lock;
 	int bd_holders;
-	struct kobject *bd_holder_dir;
+	struct kskelect *bd_holder_dir;
 	atomic_t bd_fsfreeze_count;
 	struct mutex bd_fsfreeze_mutex;
 	struct partition_meta_info *bd_meta_info;
@@ -9827,7 +9827,7 @@ struct irq_desc {
 	unsigned int force_resume_depth;
 	struct proc_dir_entry *dir;
 	struct callback_head rcu;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct mutex request_mutex;
 	int parent_irq;
 	struct module *owner;
@@ -10856,7 +10856,7 @@ enum cpuhp_state {
 	CPUHP_VIRT_NET_DEAD = 9,
 	CPUHP_IBMVNIC_DEAD = 10,
 	CPUHP_SLUB_DEAD = 11,
-	CPUHP_DEBUG_OBJ_DEAD = 12,
+	CPUHP_DEBUG_skel_DEAD = 12,
 	CPUHP_MM_WRITEBACK_DEAD = 13,
 	CPUHP_MM_VMSTAT_DEAD = 14,
 	CPUHP_SOFTIRQ_DEAD = 15,
@@ -12657,7 +12657,7 @@ struct pci_slot {
 	struct list_head list;
 	struct hotplug_slot *hotplug;
 	unsigned char number;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 typedef short unsigned int pci_bus_flags_t;
@@ -13786,8 +13786,8 @@ struct kvm_mmu_memory_cache {
 	gfp_t gfp_custom;
 	struct kmem_cache *kmem_cache;
 	int capacity;
-	int nobjs;
-	void **objects;
+	int nskels;
+	void **skelects;
 };
 
 struct iommu_domain;
@@ -21609,10 +21609,10 @@ struct sha512_state {
 
 typedef void sha512_block_fn(struct sha512_state *, const u8 *, int);
 
-struct kobj_attribute {
+struct kskel_attribute {
 	struct attribute attr;
-	ssize_t (*show)(struct kobject *, struct kobj_attribute *, char *);
-	ssize_t (*store)(struct kobject *, struct kobj_attribute *, const char *, size_t);
+	ssize_t (*show)(struct kskelect *, struct kskel_attribute *, char *);
+	ssize_t (*store)(struct kskelect *, struct kskel_attribute *, const char *, size_t);
 };
 
 typedef struct {
@@ -22544,7 +22544,7 @@ union bpf_attr {
 		__u32 attach_btf_id;
 		union {
 			__u32 attach_prog_fd;
-			__u32 attach_btf_obj_fd;
+			__u32 attach_btf_skel_fd;
 		};
 		__u32 core_relo_cnt;
 		__u64 fd_array;
@@ -22917,7 +22917,7 @@ struct bpf_map {
 	u32 btf_value_type_id;
 	u32 btf_vmlinux_value_type_id;
 	struct btf *btf;
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 	char name[16];
 	long: 64;
 	long: 64;
@@ -23092,7 +23092,7 @@ enum bpf_type_flag {
 	MEM_RINGBUF = 1024,
 	MEM_USER = 2048,
 	MEM_PERCPU = 4096,
-	OBJ_RELEASE = 8192,
+	skel_RELEASE = 8192,
 	PTR_UNTRUSTED = 16384,
 	MEM_UNINIT = 32768,
 	DYNPTR_TYPE_LOCAL = 65536,
@@ -23608,15 +23608,15 @@ enum flow_action_hw_stats_bit {
 	FLOW_ACTION_HW_STATS_NUM_BITS = 3,
 };
 
-enum kobject_action {
-	KOBJ_ADD = 0,
-	KOBJ_REMOVE = 1,
-	KOBJ_CHANGE = 2,
-	KOBJ_MOVE = 3,
-	KOBJ_ONLINE = 4,
-	KOBJ_OFFLINE = 5,
-	KOBJ_BIND = 6,
-	KOBJ_UNBIND = 7,
+enum kskelect_action {
+	Kskel_ADD = 0,
+	Kskel_REMOVE = 1,
+	Kskel_CHANGE = 2,
+	Kskel_MOVE = 3,
+	Kskel_ONLINE = 4,
+	Kskel_OFFLINE = 5,
+	Kskel_BIND = 6,
+	Kskel_UNBIND = 7,
 };
 
 enum {
@@ -24332,8 +24332,8 @@ struct cpufreq_policy {
 	struct cpufreq_frequency_table *freq_table;
 	enum cpufreq_table_sorting freq_table_sorted;
 	struct list_head policy_list;
-	struct kobject kobj;
-	struct completion kobj_unregister;
+	struct kskelect kskel;
+	struct completion kskel_unregister;
 	struct rw_semaphore rwsem;
 	bool fast_switch_possible;
 	bool fast_switch_enabled;
@@ -24376,7 +24376,7 @@ struct cpufreq_frequency_table {
 };
 
 struct gov_attr_set {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head policy_list;
 	struct mutex update_lock;
 	int usage_count;
@@ -24714,8 +24714,8 @@ struct gendisk {
 	struct mutex open_mutex;
 	unsigned int open_partitions;
 	struct backing_dev_info *bdi;
-	struct kobject queue_kobj;
-	struct kobject *slave_dir;
+	struct kskelect queue_kskel;
+	struct kskelect *slave_dir;
 	struct list_head slave_bdevs;
 	struct timer_rand_state *random;
 	atomic_t sync_io;
@@ -24820,7 +24820,7 @@ struct request_queue {
 	spinlock_t queue_lock;
 	int quiesce_depth;
 	struct gendisk *disk;
-	struct kobject *mq_kobj;
+	struct kskelect *mq_kskel;
 	struct queue_limits limits;
 	struct blk_integrity integrity;
 	struct device *dev;
@@ -24833,7 +24833,7 @@ struct request_queue {
 	unsigned int dma_pad_mask;
 	long unsigned int nr_requests;
 	struct blk_crypto_profile *crypto_profile;
-	struct kobject *crypto_kobject;
+	struct kskelect *crypto_kskelect;
 	struct timer_list timeout;
 	struct work_struct timeout_work;
 	atomic_t nr_active_requests_shared_tags;
@@ -24949,13 +24949,13 @@ struct block_device_operations {
 };
 
 struct blk_independent_access_range {
-	struct kobject kobj;
+	struct kskelect kskel;
 	sector_t sector;
 	sector_t nr_sectors;
 };
 
 struct blk_independent_access_ranges {
-	struct kobject kobj;
+	struct kskelect kskel;
 	bool sysfs_registered;
 	unsigned int nr_ia_ranges;
 	struct blk_independent_access_range ia_range[0];
@@ -25680,7 +25680,7 @@ struct kfree_rcu_cpu {
 	atomic_t work_in_progress;
 	struct hrtimer hrtimer;
 	struct llist_head bkvcache;
-	int nr_bkv_objs;
+	int nr_bkv_skels;
 };
 
 struct rcu_stall_chk_rdr {
@@ -26660,7 +26660,7 @@ struct bpf_link_info {
 		} raw_tracepoint;
 		struct {
 			__u32 attach_type;
-			__u32 target_obj_id;
+			__u32 target_skel_id;
 			__u32 target_btf_id;
 		} tracing;
 		struct {
@@ -27317,7 +27317,7 @@ struct skb_shared_hwtstamps {
 struct dql {
 	unsigned int num_queued;
 	unsigned int adj_limit;
-	unsigned int last_obj_cnt;
+	unsigned int last_skel_cnt;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -27328,7 +27328,7 @@ struct dql {
 	unsigned int num_completed;
 	unsigned int prev_ovlimit;
 	unsigned int prev_num_queued;
-	unsigned int prev_last_obj_cnt;
+	unsigned int prev_last_skel_cnt;
 	unsigned int lowest_slack;
 	long unsigned int slack_start_time;
 	unsigned int max_limit;
@@ -27753,7 +27753,7 @@ struct netdev_queue {
 	netdevice_tracker dev_tracker;
 	struct Qdisc *qdisc;
 	struct Qdisc *qdisc_sleeping;
-	struct kobject kobj;
+	struct kskelect kskel;
 	int numa_node;
 	long unsigned int tx_maxrate;
 	atomic_long_t trans_timeout;
@@ -29321,7 +29321,7 @@ struct fsnotify_mark_connector {
 	short unsigned int type;
 	short unsigned int flags;
 	union {
-		fsnotify_connp_t *obj;
+		fsnotify_connp_t *skel;
 		struct fsnotify_mark_connector *destroy_next;
 	};
 	struct hlist_head list;
@@ -29370,7 +29370,7 @@ struct fanotify_response_info_audit_rule {
 	struct fanotify_response_info_header hdr;
 	__u32 rule_number;
 	__u32 subj_trust;
-	__u32 obj_trust;
+	__u32 skel_trust;
 };
 
 struct audit_field;
@@ -29430,9 +29430,9 @@ enum audit_nfcfgop {
 	AUDIT_NFT_OP_SETELEM_REGISTER = 11,
 	AUDIT_NFT_OP_SETELEM_UNREGISTER = 12,
 	AUDIT_NFT_OP_GEN_REGISTER = 13,
-	AUDIT_NFT_OP_OBJ_REGISTER = 14,
-	AUDIT_NFT_OP_OBJ_UNREGISTER = 15,
-	AUDIT_NFT_OP_OBJ_RESET = 16,
+	AUDIT_NFT_OP_skel_REGISTER = 14,
+	AUDIT_NFT_OP_skel_UNREGISTER = 15,
+	AUDIT_NFT_OP_skel_RESET = 16,
 	AUDIT_NFT_OP_FLOWTABLE_REGISTER = 17,
 	AUDIT_NFT_OP_FLOWTABLE_UNREGISTER = 18,
 	AUDIT_NFT_OP_SETELEM_RESET = 19,
@@ -29596,7 +29596,7 @@ struct fsnotify_mark {
 	struct fsnotify_group *group;
 	struct list_head g_list;
 	spinlock_t lock;
-	struct hlist_node obj_list;
+	struct hlist_node skel_list;
 	struct fsnotify_mark_connector *connector;
 	__u32 ignore_mask;
 	unsigned int flags;
@@ -29606,13 +29606,13 @@ struct fsnotify_event {
 	struct list_head list;
 };
 
-enum fsnotify_obj_type {
-	FSNOTIFY_OBJ_TYPE_ANY = -1,
-	FSNOTIFY_OBJ_TYPE_INODE = 0,
-	FSNOTIFY_OBJ_TYPE_VFSMOUNT = 1,
-	FSNOTIFY_OBJ_TYPE_SB = 2,
-	FSNOTIFY_OBJ_TYPE_COUNT = 3,
-	FSNOTIFY_OBJ_TYPE_DETACHED = 3,
+enum fsnotify_skel_type {
+	FSNOTIFY_skel_TYPE_ANY = -1,
+	FSNOTIFY_skel_TYPE_INODE = 0,
+	FSNOTIFY_skel_TYPE_VFSMOUNT = 1,
+	FSNOTIFY_skel_TYPE_SB = 2,
+	FSNOTIFY_skel_TYPE_COUNT = 3,
+	FSNOTIFY_skel_TYPE_DETACHED = 3,
 };
 
 struct audit_node {
@@ -30330,7 +30330,7 @@ enum trace_iterator_bits {
 	TRACE_ITER_PRINTK_BIT = 9,
 	TRACE_ITER_ANNOTATE_BIT = 10,
 	TRACE_ITER_USERSTACKTRACE_BIT = 11,
-	TRACE_ITER_SYM_USEROBJ_BIT = 12,
+	TRACE_ITER_SYM_USERskel_BIT = 12,
 	TRACE_ITER_PRINTK_MSGONLY_BIT = 13,
 	TRACE_ITER_CONTEXT_INFO_BIT = 14,
 	TRACE_ITER_LATENCY_FMT_BIT = 15,
@@ -30670,7 +30670,7 @@ struct blk_mq_hw_ctx {
 	atomic_t nr_active;
 	struct hlist_node cpuhp_online;
 	struct hlist_node cpuhp_dead;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct dentry *debugfs_dir;
 	struct dentry *sched_debugfs_dir;
 	struct list_head hctx_list;
@@ -30864,7 +30864,7 @@ enum trace_iterator_flags {
 	TRACE_ITER_PRINTK = 512,
 	TRACE_ITER_ANNOTATE = 1024,
 	TRACE_ITER_USERSTACKTRACE = 2048,
-	TRACE_ITER_SYM_USEROBJ = 4096,
+	TRACE_ITER_SYM_USERskel = 4096,
 	TRACE_ITER_PRINTK_MSGONLY = 8192,
 	TRACE_ITER_CONTEXT_INFO = 16384,
 	TRACE_ITER_LATENCY_FMT = 32768,
@@ -31281,7 +31281,7 @@ enum {
 	TRACE_ARRAY_FL_GLOBAL = 1,
 };
 
-struct objpool_slot {
+struct skelpool_slot {
 	uint32_t head;
 	uint32_t tail;
 	uint32_t last;
@@ -31289,20 +31289,20 @@ struct objpool_slot {
 	void *entries[0];
 };
 
-struct objpool_head;
+struct skelpool_head;
 
-typedef int (*objpool_fini_cb)(struct objpool_head *, void *);
+typedef int (*skelpool_fini_cb)(struct skelpool_head *, void *);
 
-struct objpool_head {
-	int obj_size;
-	int nr_objs;
+struct skelpool_head {
+	int skel_size;
+	int nr_skels;
 	int nr_cpus;
 	int capacity;
 	gfp_t gfp;
 	refcount_t ref;
 	long unsigned int flags;
-	struct objpool_slot **cpu_slots;
-	objpool_fini_cb release;
+	struct skelpool_slot **cpu_slots;
+	skelpool_fini_cb release;
 	void *context;
 };
 
@@ -31319,7 +31319,7 @@ struct rethook_node {
 struct rethook {
 	void *data;
 	void (*handler)(struct rethook_node *, void *, long unsigned int, struct pt_regs *);
-	struct objpool_head pool;
+	struct skelpool_head pool;
 	struct callback_head rcu;
 };
 
@@ -31645,7 +31645,7 @@ struct bpf_mem_cache;
 struct bpf_mem_alloc {
 	struct bpf_mem_caches *caches;
 	struct bpf_mem_cache *cache;
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 	bool percpu;
 	struct work_struct work;
 };
@@ -31775,7 +31775,7 @@ struct bpf_reg_state {
 	u32 u32_min_value;
 	u32 u32_max_value;
 	u32 id;
-	u32 ref_obj_id;
+	u32 ref_skel_id;
 	struct bpf_reg_state *parent;
 	u32 frameno;
 	s32 subreg_def;
@@ -32049,7 +32049,7 @@ struct bpf_insn_aux_data {
 		struct bpf_loop_inline_state loop_inline_state;
 	};
 	union {
-		u64 obj_new_size;
+		u64 skel_new_size;
 		u64 insert_off;
 	};
 	struct btf_struct_meta *kptr_struct_meta;
@@ -34890,7 +34890,7 @@ struct proto {
 	int max_header;
 	bool no_autobind;
 	struct kmem_cache *slab;
-	unsigned int obj_size;
+	unsigned int skel_size;
 	unsigned int ipv6_pinfo_offset;
 	slab_flags_t slab_flags;
 	unsigned int useroffset;
@@ -34989,7 +34989,7 @@ struct bpf_prog_info {
 	__u64 run_cnt;
 	__u64 recursion_misses;
 	__u32 verified_insns;
-	__u32 attach_btf_obj_id;
+	__u32 attach_btf_skel_id;
 	__u32 attach_btf_id;
 };
 
@@ -35454,7 +35454,7 @@ struct request_sock;
 
 struct request_sock_ops {
 	int family;
-	unsigned int obj_size;
+	unsigned int skel_size;
 	struct kmem_cache *slab;
 	char *slab_name;
 	int (*rtx_syn_ack)(const struct sock *, struct request_sock *);
@@ -35467,7 +35467,7 @@ struct request_sock_ops {
 struct timewait_sock_ops {
 	struct kmem_cache *twsk_slab;
 	char *twsk_slab_name;
-	unsigned int twsk_obj_size;
+	unsigned int twsk_skel_size;
 	int (*twsk_unique)(struct sock *, struct sock *, void *);
 	void (*twsk_destructor)(struct sock *);
 };
@@ -35811,7 +35811,7 @@ struct padata_instance {
 	struct workqueue_struct *serial_wq;
 	struct list_head pslist;
 	struct padata_cpumask cpumask;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct mutex lock;
 	u8 flags;
 };
@@ -35917,7 +35917,7 @@ struct reciprocal_value {
 	u8 sh2;
 };
 
-struct kmem_cache_order_objects {
+struct kmem_cache_order_skelects {
 	unsigned int x;
 };
 
@@ -35930,13 +35930,13 @@ struct kmem_cache {
 	slab_flags_t flags;
 	long unsigned int min_partial;
 	unsigned int size;
-	unsigned int object_size;
+	unsigned int skelect_size;
 	struct reciprocal_value reciprocal_size;
 	unsigned int offset;
 	unsigned int cpu_partial;
 	unsigned int cpu_partial_slabs;
-	struct kmem_cache_order_objects oo;
-	struct kmem_cache_order_objects min;
+	struct kmem_cache_order_skelects oo;
+	struct kmem_cache_order_skelects min;
 	gfp_t allocflags;
 	int refcount;
 	void (*ctor)(void *);
@@ -35945,7 +35945,7 @@ struct kmem_cache {
 	unsigned int red_left_pad;
 	const char *name;
 	struct list_head list;
-	struct kobject kobj;
+	struct kskelect kskel;
 	long unsigned int random;
 	unsigned int remote_node_defrag_ratio;
 	unsigned int *random_seq;
@@ -35985,7 +35985,7 @@ struct vm_event_state {
 };
 
 enum page_memcg_data_flags {
-	MEMCG_DATA_OBJCGS = 1,
+	MEMCG_DATA_skelCGS = 1,
 	MEMCG_DATA_KMEM = 2,
 	__NR_MEMCG_DATA_FLAGS = 4,
 };
@@ -36162,7 +36162,7 @@ struct slab {
 						long unsigned int counters;
 						struct {
 							unsigned int inuse: 16;
-							unsigned int objects: 15;
+							unsigned int skelects: 15;
 							unsigned int frozen: 1;
 						};
 					};
@@ -36191,22 +36191,22 @@ struct kmalloc_info_struct {
 };
 
 struct slabinfo {
-	long unsigned int active_objs;
-	long unsigned int num_objs;
+	long unsigned int active_skels;
+	long unsigned int num_skels;
 	long unsigned int active_slabs;
 	long unsigned int num_slabs;
 	long unsigned int shared_avail;
 	unsigned int limit;
 	unsigned int batchcount;
 	unsigned int shared;
-	unsigned int objects_per_slab;
+	unsigned int skelects_per_slab;
 	unsigned int cache_order;
 };
 
-struct kmem_obj_info {
+struct kmem_skel_info {
 	void *kp_ptr;
 	struct slab *kp_slab;
-	void *kp_objp;
+	void *kp_skelp;
 	long unsigned int kp_data_offset;
 	struct kmem_cache *kp_slab_cache;
 	void *kp_ret;
@@ -37191,7 +37191,7 @@ typedef void (*btf_trace_set_migration_pmd)(void *, long unsigned int, long unsi
 typedef void (*btf_trace_remove_migration_pmd)(void *, long unsigned int, long unsigned int);
 
 struct thpsize {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head node;
 	int order;
 };
@@ -39472,8 +39472,8 @@ struct ext4_sb_info {
 	struct percpu_counter s_sra_exceeded_retry_limit;
 	struct blockgroup_lock *s_blockgroup_lock;
 	struct proc_dir_entry *s_proc;
-	struct kobject s_kobj;
-	struct completion s_kobj_unregister;
+	struct kskelect s_kskel;
+	struct completion s_kskel_unregister;
 	struct super_block *s_sb;
 	struct buffer_head *s_mmp_bh;
 	struct journal_s *s_journal;
@@ -41431,7 +41431,7 @@ struct efi_variable {
 struct efivar_entry {
 	struct efi_variable var;
 	struct list_head list;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct efi_generic_dev_path {
@@ -42276,7 +42276,7 @@ union security_list_options {
 	int (*task_getpgid)(struct task_struct *);
 	int (*task_getsid)(struct task_struct *);
 	void (*current_getlsmblob_subj)(struct lsmblob *);
-	void (*task_getlsmblob_obj)(struct task_struct *, struct lsmblob *);
+	void (*task_getlsmblob_skel)(struct task_struct *, struct lsmblob *);
 	int (*task_setnice)(struct task_struct *, int);
 	int (*task_setioprio)(struct task_struct *, int);
 	int (*task_getioprio)(struct task_struct *);
@@ -42534,7 +42534,7 @@ struct security_hook_heads {
 	struct hlist_head task_getpgid;
 	struct hlist_head task_getsid;
 	struct hlist_head current_getlsmblob_subj;
-	struct hlist_head task_getlsmblob_obj;
+	struct hlist_head task_getlsmblob_skel;
 	struct hlist_head task_setnice;
 	struct hlist_head task_setioprio;
 	struct hlist_head task_getioprio;
@@ -44922,7 +44922,7 @@ struct cipso_v4_doi {
 struct smack_audit_data {
 	const char *function;
 	char *subject;
-	char *object;
+	char *skelect;
 	char *request;
 	int result;
 };
@@ -44939,7 +44939,7 @@ struct task_smack {
 struct smack_rule {
 	struct list_head list;
 	struct smack_known *smk_subject;
-	struct smack_known *smk_object;
+	struct smack_known *smk_skelect;
 	int smk_access;
 };
 
@@ -44996,7 +44996,7 @@ enum smk_inos {
 
 struct smack_parsed_rule {
 	struct smack_known *smk_subject;
-	struct smack_known *smk_object;
+	struct smack_known *smk_skelect;
 	int smk_access1;
 	int smk_access2;
 };
@@ -45299,7 +45299,7 @@ struct tomoyo_path_info {
 	bool is_patterned;
 };
 
-struct tomoyo_obj_info;
+struct tomoyo_skel_info;
 
 struct tomoyo_execve;
 
@@ -45308,7 +45308,7 @@ struct tomoyo_domain_info;
 struct tomoyo_acl_info;
 
 struct tomoyo_request_info {
-	struct tomoyo_obj_info *obj;
+	struct tomoyo_skel_info *skel;
 	struct tomoyo_execve *ee;
 	struct tomoyo_domain_info *domain;
 	union {
@@ -45378,7 +45378,7 @@ struct tomoyo_mini_stat {
 	dev_t rdev;
 };
 
-struct tomoyo_obj_info {
+struct tomoyo_skel_info {
 	bool validate_done;
 	bool stat_valid[4];
 	struct path path1;
@@ -45394,7 +45394,7 @@ struct tomoyo_page_dump {
 
 struct tomoyo_execve {
 	struct tomoyo_request_info r;
-	struct tomoyo_obj_info obj;
+	struct tomoyo_skel_info skel;
 	struct linux_binprm *bprm;
 	const struct tomoyo_path_info *transition;
 	struct tomoyo_page_dump dump;
@@ -46321,7 +46321,7 @@ struct apparmor_notif_op {
 struct apparmor_notif_file {
 	struct apparmor_notif_op base;
 	uid_t subj_uid;
-	uid_t obj_uid;
+	uid_t skel_uid;
 	__u32 name;
 	__u8 data[0];
 };
@@ -46451,19 +46451,19 @@ struct landlock_cred_security {
 	struct landlock_ruleset *domain;
 };
 
-struct landlock_object;
+struct landlock_skelect;
 
-struct landlock_object_underops {
-	void (*release)(struct landlock_object * const);
+struct landlock_skelect_underops {
+	void (*release)(struct landlock_skelect * const);
 };
 
-struct landlock_object {
+struct landlock_skelect {
 	refcount_t usage;
 	spinlock_t lock;
-	void *underobj;
+	void *underskel;
 	union {
 		struct callback_head rcu_free;
-		const struct landlock_object_underops *underops;
+		const struct landlock_skelect_underops *underops;
 	};
 };
 
@@ -46475,7 +46475,7 @@ struct landlock_layer {
 };
 
 union landlock_key {
-	struct landlock_object *object;
+	struct landlock_skelect *skelect;
 	uintptr_t data;
 };
 
@@ -46575,7 +46575,7 @@ enum OID {
 	OID_msIndirectData = 27,
 	OID_msStatementType = 28,
 	OID_msSpOpusInfo = 29,
-	OID_msPeImageDataObjId = 30,
+	OID_msPeImageDataskelId = 30,
 	OID_msIndividualSPKeyPurpose = 31,
 	OID_msOutlookExpress = 32,
 	OID_ntlmssp = 33,
@@ -47828,7 +47828,7 @@ struct elevator_type;
 struct elevator_queue {
 	struct elevator_type *type;
 	void *elevator_data;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct mutex sysfs_lock;
 	long unsigned int flags;
 	struct hlist_head hash[64];
@@ -47847,7 +47847,7 @@ struct blk_mq_ctx {
 	struct blk_mq_hw_ctx *hctxs[3];
 	struct request_queue *queue;
 	struct blk_mq_ctxs *ctxs;
-	struct kobject kobj;
+	struct kskelect kskel;
 	long: 64;
 };
 
@@ -48062,7 +48062,7 @@ typedef void (*btf_trace_block_bio_remap)(void *, struct bio *, dev_t, sector_t)
 typedef void (*btf_trace_block_rq_remap)(void *, struct request *, dev_t, sector_t);
 
 struct blk_mq_ctxs {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct blk_mq_ctx *queue_ctx;
 };
 
@@ -49356,7 +49356,7 @@ enum opal_uid {
 	OPAL_C_PIN_MSID = 25,
 	OPAL_C_PIN_SID = 26,
 	OPAL_C_PIN_ADMIN1 = 27,
-	OPAL_HALF_UID_AUTHORITY_OBJ_REF = 28,
+	OPAL_HALF_UID_AUTHORITY_skel_REF = 28,
 	OPAL_HALF_UID_BOOLEAN_ACE = 29,
 	OPAL_UID_HEXFF = 30,
 };
@@ -49504,7 +49504,7 @@ struct d0_opal_v100 {
 };
 
 struct d0_single_user_mode {
-	__be32 num_locking_objects;
+	__be32 num_locking_skelects;
 	u8 reserved01;
 	u8 reserved02;
 	__be16 reserved03;
@@ -49618,8 +49618,8 @@ struct blk_crypto_mode {
 	unsigned int ivsize;
 };
 
-struct blk_crypto_kobj {
-	struct kobject kobj;
+struct blk_crypto_kskel {
+	struct kskelect kskel;
 	struct blk_crypto_profile *profile;
 };
 
@@ -50747,10 +50747,10 @@ struct interval_tree_span_iter {
 
 struct assoc_array_ops {
 	long unsigned int (*get_key_chunk)(const void *, int);
-	long unsigned int (*get_object_key_chunk)(const void *, int);
-	bool (*compare_object)(const void *, const void *);
-	int (*diff_objects)(const void *, const void *);
-	void (*free_object)(void *);
+	long unsigned int (*get_skelect_key_chunk)(const void *, int);
+	bool (*compare_skelect)(const void *, const void *);
+	int (*diff_skelects)(const void *, const void *);
+	void (*free_skelect)(void *);
 };
 
 struct assoc_array_node {
@@ -50931,7 +50931,7 @@ typedef struct ZSTD_CCtx_params_s ZSTD_CCtx_params;
 typedef uint8_t BYTE;
 
 typedef enum {
-	ZSTD_cwksp_alloc_objects = 0,
+	ZSTD_cwksp_alloc_skelects = 0,
 	ZSTD_cwksp_alloc_buffers = 1,
 	ZSTD_cwksp_alloc_aligned = 2,
 } ZSTD_cwksp_alloc_phase_e;
@@ -50944,7 +50944,7 @@ typedef enum {
 typedef struct {
 	void *workspace;
 	void *workspaceEnd;
-	void *objectEnd;
+	void *skelectEnd;
 	void *tableEnd;
 	void *tableValidEnd;
 	void *allocStart;
@@ -52283,7 +52283,7 @@ struct ib_device_ops {
 struct ib_core_device {
 	struct device dev;
 	possible_net_t rdma_net;
-	struct kobject *ports_kobj;
+	struct kskelect *ports_kskel;
 	struct list_head port_list;
 	struct ib_device *owner;
 };
@@ -52609,7 +52609,7 @@ enum ib_event_type {
 	IB_EVENT_WQ_FATAL = 19,
 };
 
-struct ib_ucq_object;
+struct ib_ucq_skelect;
 
 typedef void (*ib_comp_handler)(struct ib_cq *, void *);
 
@@ -52617,7 +52617,7 @@ struct ib_event;
 
 struct ib_cq {
 	struct ib_device *device;
-	struct ib_ucq_object *uobject;
+	struct ib_ucq_skelect *uskelect;
 	ib_comp_handler comp_handler;
 	void (*event_handler)(struct ib_event *, void *);
 	void *cq_context;
@@ -52640,7 +52640,7 @@ struct ib_cq {
 	struct rdma_restrack_entry res;
 };
 
-struct ib_uqp_object;
+struct ib_uqp_skelect;
 
 enum ib_qp_type {
 	IB_QPT_SMI = 0,
@@ -52684,7 +52684,7 @@ struct ib_qp {
 	atomic_t usecnt;
 	struct list_head open_list;
 	struct ib_qp *real_qp;
-	struct ib_uqp_object *uobject;
+	struct ib_uqp_skelect *uskelect;
 	void (*event_handler)(struct ib_event *, void *);
 	void *qp_context;
 	const struct ib_gid_attr *av_sgid_attr;
@@ -52701,7 +52701,7 @@ struct ib_qp {
 	struct rdma_counter *counter;
 };
 
-struct ib_usrq_object;
+struct ib_usrq_skelect;
 
 enum ib_srq_type {
 	IB_SRQT_BASIC = 0,
@@ -52712,7 +52712,7 @@ enum ib_srq_type {
 struct ib_srq {
 	struct ib_device *device;
 	struct ib_pd *pd;
-	struct ib_usrq_object *uobject;
+	struct ib_usrq_skelect *uskelect;
 	void (*event_handler)(struct ib_event *, void *);
 	void *srq_context;
 	enum ib_srq_type srq_type;
@@ -52729,7 +52729,7 @@ struct ib_srq {
 	struct rdma_restrack_entry res;
 };
 
-struct ib_uwq_object;
+struct ib_uwq_skelect;
 
 enum ib_wq_state {
 	IB_WQS_RESET = 0,
@@ -52743,7 +52743,7 @@ enum ib_wq_type {
 
 struct ib_wq {
 	struct ib_device *device;
-	struct ib_uwq_object *uobject;
+	struct ib_uwq_skelect *uskelect;
 	void *wq_context;
 	void (*event_handler)(struct ib_event *, void *);
 	struct ib_pd *pd;
@@ -52966,11 +52966,11 @@ struct ib_qp_init_attr {
 	u32 source_qpn;
 };
 
-struct ib_uobject;
+struct ib_uskelect;
 
 struct ib_rwq_ind_table {
 	struct ib_device *device;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	atomic_t usecnt;
 	u32 ind_tbl_num;
 	u32 log_ind_tbl_size;
@@ -53084,7 +53084,7 @@ struct ib_send_wr {
 struct ib_ah {
 	struct ib_device *device;
 	struct ib_pd *pd;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	const struct ib_gid_attr *sgid_attr;
 	enum rdma_ah_attr_type type;
 };
@@ -53100,7 +53100,7 @@ struct ib_mr {
 	enum ib_mr_type type;
 	bool need_inval;
 	union {
-		struct ib_uobject *uobject;
+		struct ib_uskelect *uskelect;
 		struct list_head qp_entry;
 	};
 	struct ib_dm *dm;
@@ -53118,7 +53118,7 @@ struct ib_recv_wr {
 	int num_sge;
 };
 
-struct ib_rdmacg_object {
+struct ib_rdmacg_skelect {
 	struct rdma_cgroup *cg;
 };
 
@@ -53127,25 +53127,25 @@ struct ib_uverbs_file;
 struct ib_ucontext {
 	struct ib_device *device;
 	struct ib_uverbs_file *ufile;
-	struct ib_rdmacg_object cg_obj;
+	struct ib_rdmacg_skelect cg_skel;
 	struct rdma_restrack_entry res;
 	struct xarray mmap_xa;
 };
 
-struct uverbs_api_object;
+struct uverbs_api_skelect;
 
-struct ib_uobject {
+struct ib_uskelect {
 	u64 user_handle;
 	struct ib_uverbs_file *ufile;
 	struct ib_ucontext *context;
-	void *object;
+	void *skelect;
 	struct list_head list;
-	struct ib_rdmacg_object cg_obj;
+	struct ib_rdmacg_skelect cg_skel;
 	int id;
 	struct kref ref;
 	atomic_t usecnt;
 	struct callback_head rcu;
-	const struct uverbs_api_object *uapi_object;
+	const struct uverbs_api_skelect *uapi_skelect;
 };
 
 struct ib_udata {
@@ -53159,7 +53159,7 @@ struct ib_pd {
 	u32 local_dma_lkey;
 	u32 flags;
 	struct ib_device *device;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	atomic_t usecnt;
 	u32 unsafe_global_rkey;
 	struct ib_mr *__internal_mr;
@@ -53227,14 +53227,14 @@ struct ib_dm {
 	struct ib_device *device;
 	u32 length;
 	u32 flags;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	atomic_t usecnt;
 };
 
 struct ib_mw {
 	struct ib_device *device;
 	struct ib_pd *pd;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	u32 rkey;
 	enum ib_mw_type type;
 };
@@ -53414,7 +53414,7 @@ enum ib_flow_action_type {
 
 struct ib_flow_action {
 	struct ib_device *device;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	enum ib_flow_action_type type;
 	atomic_t usecnt;
 };
@@ -53427,7 +53427,7 @@ struct ib_flow_spec_action_count {
 
 struct ib_counters {
 	struct ib_device *device;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 	atomic_t usecnt;
 };
 
@@ -53464,7 +53464,7 @@ struct ib_flow_attr {
 struct ib_flow {
 	struct ib_qp *qp;
 	struct ib_device *device;
-	struct ib_uobject *uobject;
+	struct ib_uskelect *uskelect;
 };
 
 struct ib_pkey_cache;
@@ -54720,49 +54720,49 @@ struct software_node {
 
 typedef u64 acpi_io_address;
 
-typedef u32 acpi_object_type;
+typedef u32 acpi_skelect_type;
 
-union acpi_object {
-	acpi_object_type type;
+union acpi_skelect {
+	acpi_skelect_type type;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u64 value;
 	} integer;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u32 length;
 		char *pointer;
 	} string;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u32 length;
 		u8 *pointer;
 	} buffer;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u32 count;
-		union acpi_object *elements;
+		union acpi_skelect *elements;
 	} package;
 	struct {
-		acpi_object_type type;
-		acpi_object_type actual_type;
+		acpi_skelect_type type;
+		acpi_skelect_type actual_type;
 		acpi_handle handle;
 	} reference;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u32 proc_id;
 		acpi_io_address pblk_address;
 		u32 pblk_length;
 	} processor;
 	struct {
-		acpi_object_type type;
+		acpi_skelect_type type;
 		u32 system_level;
 		u32 resource_order;
 	} power_resource;
 };
 
 struct acpi_hotplug_profile {
-	struct kobject kobj;
+	struct kskelect kskel;
 	int (*scan_dependent)(struct acpi_device *);
 	void (*notify_online)(struct acpi_device *);
 	bool enabled: 1;
@@ -54821,7 +54821,7 @@ struct acpi_device_pnp {
 	struct list_head ids;
 	acpi_device_name device_name;
 	acpi_device_class device_class;
-	union acpi_object *str_obj;
+	union acpi_skelect *str_skel;
 };
 
 struct acpi_device_power_flags {
@@ -54892,9 +54892,9 @@ struct acpi_device_dir {
 };
 
 struct acpi_device_data {
-	const union acpi_object *pointer;
+	const union acpi_skelect *pointer;
 	struct list_head properties;
-	const union acpi_object *of_compatible;
+	const union acpi_skelect *of_compatible;
 	struct list_head subnodes;
 };
 
@@ -56173,9 +56173,9 @@ struct hpc_ops {
 
 typedef u8 acpi_adr_space_type;
 
-struct acpi_object_list {
+struct acpi_skelect_list {
 	u32 count;
-	union acpi_object *pointer;
+	union acpi_skelect *pointer;
 };
 
 typedef acpi_status (*acpi_walk_callback)(acpi_handle, u32, void *, void **);
@@ -58241,8 +58241,8 @@ struct acpi_data_node {
 	struct fwnode_handle *parent;
 	struct acpi_device_data data;
 	struct list_head sibling;
-	struct kobject kobj;
-	struct completion kobj_done;
+	struct kskelect kskel;
+	struct completion kskel_done;
 };
 
 enum utf16_endian {
@@ -58259,7 +58259,7 @@ struct acpi_data_node_attr {
 
 typedef void (*acpi_notify_handler)(acpi_handle, u32, void *);
 
-typedef void (*acpi_object_handler)(acpi_handle, void *);
+typedef void (*acpi_skelect_handler)(acpi_handle, void *);
 
 typedef acpi_status (*acpi_table_handler)(u32, void *, void *);
 
@@ -58539,7 +58539,7 @@ struct acpi_data_attr {
 	u64 addr;
 };
 
-struct acpi_data_obj {
+struct acpi_data_skel {
 	char *name;
 	int (*fn)(void *, struct acpi_data_attr *);
 };
@@ -58593,10 +58593,10 @@ union acpi_name_union {
 	char ascii[4];
 };
 
-union acpi_operand_object;
+union acpi_operand_skelect;
 
 struct acpi_namespace_node {
-	union acpi_operand_object *object;
+	union acpi_operand_skelect *skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 flags;
@@ -58607,16 +58607,16 @@ struct acpi_namespace_node {
 	acpi_owner_id owner_id;
 };
 
-struct acpi_object_common {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_common {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
 };
 
-struct acpi_object_integer {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_integer {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58625,8 +58625,8 @@ struct acpi_object_integer {
 	u64 value;
 };
 
-struct acpi_object_string {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_string {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58635,8 +58635,8 @@ struct acpi_object_string {
 	u32 length;
 };
 
-struct acpi_object_buffer {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_buffer {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58648,21 +58648,21 @@ struct acpi_object_buffer {
 	struct acpi_namespace_node *node;
 };
 
-struct acpi_object_package {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_package {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
 	struct acpi_namespace_node *node;
-	union acpi_operand_object **elements;
+	union acpi_operand_skelect **elements;
 	u8 *aml_start;
 	u32 aml_length;
 	u32 count;
 };
 
-struct acpi_object_event {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_event {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58674,8 +58674,8 @@ struct acpi_walk_state;
 
 typedef acpi_status (*acpi_internal_method)(struct acpi_walk_state *);
 
-struct acpi_object_method {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_method {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58683,12 +58683,12 @@ struct acpi_object_method {
 	u8 info_flags;
 	u8 param_count;
 	u8 sync_level;
-	union acpi_operand_object *mutex;
-	union acpi_operand_object *node;
+	union acpi_operand_skelect *mutex;
+	union acpi_operand_skelect *node;
 	u8 *aml_start;
 	union {
 		acpi_internal_method implementation;
-		union acpi_operand_object *handler;
+		union acpi_operand_skelect *handler;
 	} dispatch;
 	u32 aml_length;
 	acpi_owner_id owner_id;
@@ -58697,8 +58697,8 @@ struct acpi_object_method {
 
 struct acpi_thread_state;
 
-struct acpi_object_mutex {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_mutex {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58708,87 +58708,87 @@ struct acpi_object_mutex {
 	void *os_mutex;
 	u64 thread_id;
 	struct acpi_thread_state *owner_thread;
-	union acpi_operand_object *prev;
-	union acpi_operand_object *next;
+	union acpi_operand_skelect *prev;
+	union acpi_operand_skelect *next;
 	struct acpi_namespace_node *node;
 	u8 original_sync_level;
 };
 
-struct acpi_object_region {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_region {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
 	u8 space_id;
 	struct acpi_namespace_node *node;
-	union acpi_operand_object *handler;
-	union acpi_operand_object *next;
+	union acpi_operand_skelect *handler;
+	union acpi_operand_skelect *next;
 	acpi_physical_address address;
 	u32 length;
 	void *pointer;
 };
 
-struct acpi_object_notify_common {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_notify_common {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	union acpi_operand_object *notify_list[2];
-	union acpi_operand_object *handler;
+	union acpi_operand_skelect *notify_list[2];
+	union acpi_operand_skelect *handler;
 };
 
 struct acpi_gpe_block_info;
 
-struct acpi_object_device {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_device {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	union acpi_operand_object *notify_list[2];
-	union acpi_operand_object *handler;
+	union acpi_operand_skelect *notify_list[2];
+	union acpi_operand_skelect *handler;
 	struct acpi_gpe_block_info *gpe_block;
 };
 
-struct acpi_object_power_resource {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_power_resource {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	union acpi_operand_object *notify_list[2];
-	union acpi_operand_object *handler;
+	union acpi_operand_skelect *notify_list[2];
+	union acpi_operand_skelect *handler;
 	u32 system_level;
 	u32 resource_order;
 };
 
-struct acpi_object_processor {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_processor {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
 	u8 proc_id;
 	u8 length;
-	union acpi_operand_object *notify_list[2];
-	union acpi_operand_object *handler;
+	union acpi_operand_skelect *notify_list[2];
+	union acpi_operand_skelect *handler;
 	acpi_io_address address;
 };
 
-struct acpi_object_thermal_zone {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_thermal_zone {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	union acpi_operand_object *notify_list[2];
-	union acpi_operand_object *handler;
+	union acpi_operand_skelect *notify_list[2];
+	union acpi_operand_skelect *handler;
 };
 
-struct acpi_object_field_common {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_field_common {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58802,11 +58802,11 @@ struct acpi_object_field_common {
 	u32 value;
 	u8 start_field_bit_offset;
 	u8 access_length;
-	union acpi_operand_object *region_obj;
+	union acpi_operand_skelect *region_skel;
 };
 
-struct acpi_object_region_field {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_region_field {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58821,14 +58821,14 @@ struct acpi_object_region_field {
 	u8 start_field_bit_offset;
 	u8 access_length;
 	u16 resource_length;
-	union acpi_operand_object *region_obj;
+	union acpi_operand_skelect *region_skel;
 	u8 *resource_buffer;
 	u16 pin_number_index;
 	u8 *internal_pcc_buffer;
 };
 
-struct acpi_object_buffer_field {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_buffer_field {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58843,11 +58843,11 @@ struct acpi_object_buffer_field {
 	u8 start_field_bit_offset;
 	u8 access_length;
 	u8 is_create_field;
-	union acpi_operand_object *buffer_obj;
+	union acpi_operand_skelect *buffer_skel;
 };
 
-struct acpi_object_bank_field {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_bank_field {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58861,12 +58861,12 @@ struct acpi_object_bank_field {
 	u32 value;
 	u8 start_field_bit_offset;
 	u8 access_length;
-	union acpi_operand_object *region_obj;
-	union acpi_operand_object *bank_obj;
+	union acpi_operand_skelect *region_skel;
+	union acpi_operand_skelect *bank_skel;
 };
 
-struct acpi_object_index_field {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_index_field {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58880,12 +58880,12 @@ struct acpi_object_index_field {
 	u32 value;
 	u8 start_field_bit_offset;
 	u8 access_length;
-	union acpi_operand_object *index_obj;
-	union acpi_operand_object *data_obj;
+	union acpi_operand_skelect *index_skel;
+	union acpi_operand_skelect *data_skel;
 };
 
-struct acpi_object_notify_handler {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_notify_handler {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58894,11 +58894,11 @@ struct acpi_object_notify_handler {
 	u32 handler_type;
 	acpi_notify_handler handler;
 	void *context;
-	union acpi_operand_object *next[2];
+	union acpi_operand_skelect *next[2];
 };
 
-struct acpi_object_addr_handler {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_addr_handler {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58910,12 +58910,12 @@ struct acpi_object_addr_handler {
 	void *context;
 	void *context_mutex;
 	acpi_adr_space_setup setup;
-	union acpi_operand_object *region_list;
-	union acpi_operand_object *next;
+	union acpi_operand_skelect *region_list;
+	union acpi_operand_skelect *next;
 };
 
-struct acpi_object_reference {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_reference {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58923,16 +58923,16 @@ struct acpi_object_reference {
 	u8 class;
 	u8 target_type;
 	u8 resolved;
-	void *object;
+	void *skelect;
 	struct acpi_namespace_node *node;
-	union acpi_operand_object **where;
+	union acpi_operand_skelect **where;
 	u8 *index_pointer;
 	u8 *aml;
 	u32 value;
 };
 
-struct acpi_object_extra {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_extra {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
@@ -58944,55 +58944,55 @@ struct acpi_object_extra {
 	u32 aml_length;
 };
 
-struct acpi_object_data {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_data {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	acpi_object_handler handler;
+	acpi_skelect_handler handler;
 	void *pointer;
 };
 
-struct acpi_object_cache_list {
-	union acpi_operand_object *next_object;
+struct acpi_skelect_cache_list {
+	union acpi_operand_skelect *next_skelect;
 	u8 descriptor_type;
 	u8 type;
 	u16 reference_count;
 	u8 flags;
-	union acpi_operand_object *next;
+	union acpi_operand_skelect *next;
 };
 
-union acpi_operand_object {
-	struct acpi_object_common common;
-	struct acpi_object_integer integer;
-	struct acpi_object_string string;
-	struct acpi_object_buffer buffer;
-	struct acpi_object_package package;
-	struct acpi_object_event event;
-	struct acpi_object_method method;
-	struct acpi_object_mutex mutex;
-	struct acpi_object_region region;
-	struct acpi_object_notify_common common_notify;
-	struct acpi_object_device device;
-	struct acpi_object_power_resource power_resource;
-	struct acpi_object_processor processor;
-	struct acpi_object_thermal_zone thermal_zone;
-	struct acpi_object_field_common common_field;
-	struct acpi_object_region_field field;
-	struct acpi_object_buffer_field buffer_field;
-	struct acpi_object_bank_field bank_field;
-	struct acpi_object_index_field index_field;
-	struct acpi_object_notify_handler notify;
-	struct acpi_object_addr_handler address_space;
-	struct acpi_object_reference reference;
-	struct acpi_object_extra extra;
-	struct acpi_object_data data;
-	struct acpi_object_cache_list cache;
+union acpi_operand_skelect {
+	struct acpi_skelect_common common;
+	struct acpi_skelect_integer integer;
+	struct acpi_skelect_string string;
+	struct acpi_skelect_buffer buffer;
+	struct acpi_skelect_package package;
+	struct acpi_skelect_event event;
+	struct acpi_skelect_method method;
+	struct acpi_skelect_mutex mutex;
+	struct acpi_skelect_region region;
+	struct acpi_skelect_notify_common common_notify;
+	struct acpi_skelect_device device;
+	struct acpi_skelect_power_resource power_resource;
+	struct acpi_skelect_processor processor;
+	struct acpi_skelect_thermal_zone thermal_zone;
+	struct acpi_skelect_field_common common_field;
+	struct acpi_skelect_region_field field;
+	struct acpi_skelect_buffer_field buffer_field;
+	struct acpi_skelect_bank_field bank_field;
+	struct acpi_skelect_index_field index_field;
+	struct acpi_skelect_notify_handler notify;
+	struct acpi_skelect_addr_handler address_space;
+	struct acpi_skelect_reference reference;
+	struct acpi_skelect_extra extra;
+	struct acpi_skelect_data data;
+	struct acpi_skelect_cache_list cache;
 	struct acpi_namespace_node node;
 };
 
-union acpi_parse_object;
+union acpi_parse_skelect;
 
 union acpi_generic_state;
 
@@ -59002,14 +59002,14 @@ struct acpi_parse_state {
 	u8 *aml_end;
 	u8 *pkg_start;
 	u8 *pkg_end;
-	union acpi_parse_object *start_op;
+	union acpi_parse_skelect *start_op;
 	struct acpi_namespace_node *start_node;
 	union acpi_generic_state *scope;
-	union acpi_parse_object *start_scope;
+	union acpi_parse_skelect *start_scope;
 	u32 aml_size;
 };
 
-typedef acpi_status (*acpi_parse_downwards)(struct acpi_walk_state *, union acpi_parse_object **);
+typedef acpi_status (*acpi_parse_downwards)(struct acpi_walk_state *, union acpi_parse_skelect **);
 
 typedef acpi_status (*acpi_parse_upwards)(struct acpi_walk_state *);
 
@@ -59044,27 +59044,27 @@ struct acpi_walk_state {
 	u8 method_is_nested;
 	struct acpi_namespace_node arguments[7];
 	struct acpi_namespace_node local_variables[8];
-	union acpi_operand_object *operands[9];
-	union acpi_operand_object **params;
+	union acpi_operand_skelect *operands[9];
+	union acpi_operand_skelect **params;
 	u8 *aml_last_while;
-	union acpi_operand_object **caller_return_desc;
+	union acpi_operand_skelect **caller_return_desc;
 	union acpi_generic_state *control_state;
 	struct acpi_namespace_node *deferred_node;
-	union acpi_operand_object *implicit_return_obj;
+	union acpi_operand_skelect *implicit_return_skel;
 	struct acpi_namespace_node *method_call_node;
-	union acpi_parse_object *method_call_op;
-	union acpi_operand_object *method_desc;
+	union acpi_parse_skelect *method_call_op;
+	union acpi_operand_skelect *method_desc;
 	struct acpi_namespace_node *method_node;
 	char *method_pathname;
-	union acpi_parse_object *op;
+	union acpi_parse_skelect *op;
 	const struct acpi_opcode_info *op_info;
-	union acpi_parse_object *origin;
-	union acpi_operand_object *result_obj;
+	union acpi_parse_skelect *origin;
+	union acpi_operand_skelect *result_skel;
 	union acpi_generic_state *results;
-	union acpi_operand_object *return_desc;
+	union acpi_operand_skelect *return_desc;
 	union acpi_generic_state *scope_info;
-	union acpi_parse_object *prev_op;
-	union acpi_parse_object *next_op;
+	union acpi_parse_skelect *prev_op;
+	union acpi_parse_skelect *next_op;
 	struct acpi_thread_state *thread;
 	acpi_parse_downwards descending_callback;
 	acpi_parse_upwards ascending_callback;
@@ -59153,7 +59153,7 @@ struct acpi_update_state {
 	u8 flags;
 	u16 value;
 	u16 state;
-	union acpi_operand_object *object;
+	union acpi_operand_skelect *skelect;
 };
 
 struct acpi_pkg_state {
@@ -59163,10 +59163,10 @@ struct acpi_pkg_state {
 	u16 value;
 	u16 state;
 	u32 index;
-	union acpi_operand_object *source_object;
-	union acpi_operand_object *dest_object;
+	union acpi_operand_skelect *source_skelect;
+	union acpi_operand_skelect *dest_skelect;
 	struct acpi_walk_state *walk_state;
-	void *this_target_obj;
+	void *this_target_skel;
 	u32 num_packages;
 };
 
@@ -59177,7 +59177,7 @@ struct acpi_control_state {
 	u16 value;
 	u16 state;
 	u16 opcode;
-	union acpi_parse_object *predicate_op;
+	union acpi_parse_skelect *predicate_op;
 	u8 *aml_predicate_start;
 	u8 *package_end;
 	u64 loop_timeout;
@@ -59189,16 +59189,16 @@ union acpi_parse_value {
 	char *string;
 	u8 *buffer;
 	char *name;
-	union acpi_parse_object *arg;
+	union acpi_parse_skelect *arg;
 };
 
-struct acpi_parse_obj_common {
-	union acpi_parse_object *parent;
+struct acpi_parse_skel_common {
+	union acpi_parse_skelect *parent;
 	u8 descriptor_type;
 	u8 flags;
 	u16 aml_opcode;
 	u8 *aml;
-	union acpi_parse_object *next;
+	union acpi_parse_skelect *next;
 	struct acpi_namespace_node *node;
 	union acpi_parse_value value;
 	u8 arg_list_length;
@@ -59208,13 +59208,13 @@ struct acpi_parse_obj_common {
 	char aml_op_name[16];
 };
 
-struct acpi_parse_obj_named {
-	union acpi_parse_object *parent;
+struct acpi_parse_skel_named {
+	union acpi_parse_skelect *parent;
 	u8 descriptor_type;
 	u8 flags;
 	u16 aml_opcode;
 	u8 *aml;
-	union acpi_parse_object *next;
+	union acpi_parse_skelect *next;
 	struct acpi_namespace_node *node;
 	union acpi_parse_value value;
 	u8 arg_list_length;
@@ -59228,13 +59228,13 @@ struct acpi_parse_obj_named {
 	u32 name;
 };
 
-struct acpi_parse_obj_asl {
-	union acpi_parse_object *parent;
+struct acpi_parse_skel_asl {
+	union acpi_parse_skelect *parent;
 	u8 descriptor_type;
 	u8 flags;
 	u16 aml_opcode;
 	u8 *aml;
-	union acpi_parse_object *next;
+	union acpi_parse_skelect *next;
 	struct acpi_namespace_node *node;
 	union acpi_parse_value value;
 	u8 arg_list_length;
@@ -59242,8 +59242,8 @@ struct acpi_parse_obj_asl {
 	u8 disasm_opcode;
 	char *operator_symbol;
 	char aml_op_name[16];
-	union acpi_parse_object *child;
-	union acpi_parse_object *parent_method;
+	union acpi_parse_skelect *child;
+	union acpi_parse_skelect *parent_method;
 	char *filename;
 	u8 file_changed;
 	char *parent_filename;
@@ -59270,10 +59270,10 @@ struct acpi_parse_obj_asl {
 	char parse_op_name[20];
 };
 
-union acpi_parse_object {
-	struct acpi_parse_obj_common common;
-	struct acpi_parse_obj_named named;
-	struct acpi_parse_obj_asl asl;
+union acpi_parse_skelect {
+	struct acpi_parse_skel_common common;
+	struct acpi_parse_skel_named named;
+	struct acpi_parse_skel_asl asl;
 };
 
 struct acpi_scope_state {
@@ -59292,7 +59292,7 @@ struct acpi_pscope_state {
 	u16 value;
 	u16 state;
 	u32 arg_count;
-	union acpi_parse_object *op;
+	union acpi_parse_skelect *op;
 	u8 *arg_end;
 	u8 *pkg_end;
 	u32 arg_list;
@@ -59306,7 +59306,7 @@ struct acpi_thread_state {
 	u16 state;
 	u8 current_sync_level;
 	struct acpi_walk_state *walk_state_list;
-	union acpi_operand_object *acquired_mutex_list;
+	union acpi_operand_skelect *acquired_mutex_list;
 	u64 thread_id;
 };
 
@@ -59316,7 +59316,7 @@ struct acpi_result_values {
 	u8 flags;
 	u16 value;
 	u16 state;
-	union acpi_operand_object *obj_desc[8];
+	union acpi_operand_skelect *skel_desc[8];
 };
 
 struct acpi_global_notify_handler {
@@ -59332,7 +59332,7 @@ struct acpi_notify_info {
 	u16 state;
 	u8 handler_list_id;
 	struct acpi_namespace_node *node;
-	union acpi_operand_object *handler_list_head;
+	union acpi_operand_skelect *handler_list_head;
 	struct acpi_global_notify_handler *global;
 };
 
@@ -59353,7 +59353,7 @@ struct acpi_opcode_info {
 	u32 parse_args;
 	u32 runtime_args;
 	u16 flags;
-	u8 object_type;
+	u8 skelect_type;
 	u8 class;
 	u8 type;
 };
@@ -59376,14 +59376,14 @@ struct acpi_common_descriptor {
 
 union acpi_descriptor {
 	struct acpi_common_descriptor common;
-	union acpi_operand_object object;
+	union acpi_operand_skelect skelect;
 	struct acpi_namespace_node node;
-	union acpi_parse_object op;
+	union acpi_parse_skelect op;
 };
 
 struct acpi_init_walk_info {
 	u32 table_index;
-	u32 object_count;
+	u32 skelect_count;
 	u32 method_count;
 	u32 serial_method_count;
 	u32 non_serial_method_count;
@@ -59457,9 +59457,9 @@ struct acpi_name_info {
 
 struct acpi_package_info {
 	u8 type;
-	u8 object_type1;
+	u8 skelect_type1;
 	u8 count1;
-	u8 object_type2;
+	u8 skelect_type2;
 	u8 count2;
 	u16 reserved;
 } __attribute__((packed));
@@ -59467,23 +59467,23 @@ struct acpi_package_info {
 struct acpi_package_info2 {
 	u8 type;
 	u8 count;
-	u8 object_type[4];
+	u8 skelect_type[4];
 	u8 reserved;
 };
 
 struct acpi_package_info3 {
 	u8 type;
 	u8 count;
-	u8 object_type[2];
-	u8 tail_object_type;
+	u8 skelect_type[2];
+	u8 tail_skelect_type;
 	u16 reserved;
 } __attribute__((packed));
 
 struct acpi_package_info4 {
 	u8 type;
-	u8 object_type1;
+	u8 skelect_type1;
 	u8 count1;
-	u8 sub_object_types;
+	u8 sub_skelect_types;
 	u8 pkg_count;
 	u16 reserved;
 } __attribute__((packed));
@@ -59505,19 +59505,19 @@ struct acpi_reg_walk_info {
 struct acpi_evaluate_info {
 	struct acpi_namespace_node *prefix_node;
 	const char *relative_pathname;
-	union acpi_operand_object **parameters;
+	union acpi_operand_skelect **parameters;
 	struct acpi_namespace_node *node;
-	union acpi_operand_object *obj_desc;
+	union acpi_operand_skelect *skel_desc;
 	char *full_pathname;
 	const union acpi_predefined_info *predefined;
-	union acpi_operand_object *return_object;
-	union acpi_operand_object *parent_package;
+	union acpi_operand_skelect *return_skelect;
+	union acpi_operand_skelect *parent_package;
 	u32 return_flags;
 	u32 return_btype;
 	u16 param_count;
 	u16 node_flags;
 	u8 pass_number;
-	u8 return_object_type;
+	u8 return_skelect_type;
 	u8 flags;
 };
 
@@ -59561,7 +59561,7 @@ struct acpi_bit_register_info {
 	u16 access_bit_mask;
 };
 
-typedef acpi_status (*acpi_repair_function)(struct acpi_evaluate_info *, union acpi_operand_object **);
+typedef acpi_status (*acpi_repair_function)(struct acpi_evaluate_info *, union acpi_operand_skelect **);
 
 struct acpi_repair_info {
 	char name[4];
@@ -60625,7 +60625,7 @@ struct acpi_pnp_device_id_list {
 struct acpi_device_info {
 	u32 info_size;
 	u32 name;
-	acpi_object_type type;
+	acpi_skelect_type type;
 	u8 param_count;
 	u16 valid;
 	u8 flags;
@@ -60744,11 +60744,11 @@ struct cpuidle_state {
 	int (*enter_s2idle)(struct cpuidle_device *, struct cpuidle_driver *, int);
 };
 
-struct cpuidle_driver_kobj;
+struct cpuidle_driver_kskel;
 
-struct cpuidle_state_kobj;
+struct cpuidle_state_kskel;
 
-struct cpuidle_device_kobj;
+struct cpuidle_device_kskel;
 
 struct cpuidle_device {
 	unsigned int registered: 1;
@@ -60761,9 +60761,9 @@ struct cpuidle_device {
 	u64 poll_limit_ns;
 	u64 forced_idle_latency_limit_ns;
 	struct cpuidle_state_usage states_usage[10];
-	struct cpuidle_state_kobj *kobjs[10];
-	struct cpuidle_driver_kobj *kobj_driver;
-	struct cpuidle_device_kobj *kobj_dev;
+	struct cpuidle_state_kskel *kskels[10];
+	struct cpuidle_driver_kskel *kskel_driver;
+	struct cpuidle_device_kskel *kskel_dev;
 	struct list_head device_list;
 };
 
@@ -65274,8 +65274,8 @@ struct iova_bitmap {
 };
 
 struct iommu_group {
-	struct kobject kobj;
-	struct kobject *devices_kobj;
+	struct kskelect kskel;
+	struct kskelect *devices_kskel;
 	struct list_head devices;
 	struct xarray pasid_array;
 	struct mutex mutex;
@@ -65308,7 +65308,7 @@ struct iommu_resv_region {
 	void (*free)(struct device *, struct iommu_resv_region *);
 };
 
-struct fsl_mc_obj_desc {
+struct fsl_mc_skel_desc {
 	char type[16];
 	int id;
 	u16 vendor;
@@ -65334,7 +65334,7 @@ struct fsl_mc_device {
 	u32 icid;
 	u16 mc_handle;
 	struct fsl_mc_io *mc_io;
-	struct fsl_mc_obj_desc obj_desc;
+	struct fsl_mc_skel_desc skel_desc;
 	struct resource *regions;
 	struct fsl_mc_device_irq **irqs;
 	struct fsl_mc_resource *resource;
@@ -65515,10 +65515,10 @@ struct class_interface {
 };
 
 struct driver_private {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct klist klist_devices;
 	struct klist_node knode_bus;
-	struct module_kobject *mkobj;
+	struct module_kskelect *mkskel;
 	struct device_driver *driver;
 };
 
@@ -65554,7 +65554,7 @@ union device_attr_group_devres {
 };
 
 struct class_dir {
-	struct kobject kobj;
+	struct kskelect kskel;
 	const struct class *class;
 };
 
@@ -68022,7 +68022,7 @@ struct sync_merge_data {
 };
 
 struct sync_fence_info {
-	char obj_name[32];
+	char skel_name[32];
 	char driver_name[32];
 	__s32 status;
 	__u32 flags;
@@ -69844,7 +69844,7 @@ struct ata_device {
 	long unsigned int flags;
 	struct scsi_device *sdev;
 	void *private_data;
-	union acpi_object *gtf_cache;
+	union acpi_skelect *gtf_cache;
 	unsigned int gtf_filter;
 	void *zpodd;
 	struct device tdev;
@@ -70234,19 +70234,19 @@ struct drm_modeset_lock {
 	struct list_head head;
 };
 
-struct drm_object_properties;
+struct drm_skelect_properties;
 
-struct drm_mode_object {
+struct drm_mode_skelect {
 	uint32_t id;
 	uint32_t type;
-	struct drm_object_properties *properties;
+	struct drm_skelect_properties *properties;
 	struct kref refcount;
 	void (*free_cb)(struct kref *);
 };
 
 struct drm_property;
 
-struct drm_object_properties {
+struct drm_skelect_properties {
 	int count;
 	struct drm_property *properties[64];
 	uint64_t values[64];
@@ -70256,7 +70256,7 @@ struct drm_device;
 
 struct drm_property {
 	struct list_head head;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	uint32_t flags;
 	char name[32];
 	uint32_t num_values;
@@ -70368,8 +70368,8 @@ struct drm_mode_create_dumb {
 
 struct drm_mode_atomic {
 	__u32 flags;
-	__u32 count_objs;
-	__u64 objs_ptr;
+	__u32 count_skels;
+	__u64 skels_ptr;
 	__u64 count_props_ptr;
 	__u64 props_ptr;
 	__u64 prop_values_ptr;
@@ -70388,7 +70388,7 @@ struct drm_mode_config {
 	struct drm_modeset_lock connection_mutex;
 	struct drm_modeset_acquire_ctx *acquire_ctx;
 	struct mutex idr_mutex;
-	struct idr object_idr;
+	struct idr skelect_idr;
 	struct idr tile_idr;
 	struct mutex fb_lock;
 	int num_fb;
@@ -70406,7 +70406,7 @@ struct drm_mode_config {
 	int num_crtc;
 	struct list_head crtc_list;
 	struct list_head property_list;
-	struct list_head privobj_list;
+	struct list_head privskel_list;
 	int min_width;
 	int min_height;
 	int max_width;
@@ -70547,8 +70547,8 @@ struct drm_device {
 	spinlock_t event_lock;
 	unsigned int num_crtcs;
 	struct drm_mode_config mode_config;
-	struct mutex object_name_lock;
-	struct idr object_name_idr;
+	struct mutex skelect_name_lock;
+	struct idr skelect_name_idr;
 	struct drm_vma_offset_manager *vma_offset_manager;
 	struct drm_vram_mm *vram_mm;
 	enum switch_power_state switch_power_state;
@@ -70557,7 +70557,7 @@ struct drm_device {
 };
 
 struct drm_property_blob {
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	struct drm_device *dev;
 	struct list_head head_global;
 	struct list_head head_file;
@@ -70812,7 +70812,7 @@ struct drm_connector {
 	struct fwnode_handle *fwnode;
 	struct list_head head;
 	struct list_head global_connector_list_entry;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	char *name;
 	struct mutex mutex;
 	unsigned int index;
@@ -70829,7 +70829,7 @@ struct drm_connector {
 	struct drm_display_info display_info;
 	const struct drm_connector_funcs *funcs;
 	struct drm_property_blob *edid_blob_ptr;
-	struct drm_object_properties properties;
+	struct drm_skelect_properties properties;
 	struct drm_property *scaling_mode_property;
 	struct drm_property *vrr_capable_property;
 	struct drm_property *colorspace_property;
@@ -70984,7 +70984,7 @@ struct drm_crtc {
 	struct list_head head;
 	char *name;
 	struct drm_modeset_lock mutex;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	struct drm_plane *primary;
 	struct drm_plane *cursor;
 	unsigned int index;
@@ -70999,7 +70999,7 @@ struct drm_crtc {
 	uint32_t gamma_size;
 	uint16_t *gamma_store;
 	const struct drm_crtc_helper_funcs *helper_private;
-	struct drm_object_properties properties;
+	struct drm_skelect_properties properties;
 	struct drm_property *scaling_filter_property;
 	struct drm_crtc_state *state;
 	struct list_head commit_list;
@@ -71020,7 +71020,7 @@ struct drm_encoder_helper_funcs;
 struct drm_encoder {
 	struct drm_device *dev;
 	struct list_head head;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	char *name;
 	int encoder_type;
 	unsigned int index;
@@ -71039,7 +71039,7 @@ struct __drm_crtcs_state;
 
 struct __drm_connnectors_state;
 
-struct __drm_private_objs_state;
+struct __drm_private_skels_state;
 
 struct drm_atomic_state {
 	struct kref ref;
@@ -71052,8 +71052,8 @@ struct drm_atomic_state {
 	struct __drm_crtcs_state *crtcs;
 	int num_connector;
 	struct __drm_connnectors_state *connectors;
-	int num_private_objs;
-	struct __drm_private_objs_state *private_objs;
+	int num_private_skels;
+	struct __drm_private_skels_state *private_skels;
 	struct drm_modeset_acquire_ctx *acquire_ctx;
 	struct drm_crtc_commit *fake_commit;
 	struct work_struct commit_work;
@@ -71161,12 +71161,12 @@ struct drm_mode_config_funcs {
 
 struct drm_framebuffer_funcs;
 
-struct drm_gem_object;
+struct drm_gem_skelect;
 
 struct drm_framebuffer {
 	struct drm_device *dev;
 	struct list_head head;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	char comm[16];
 	const struct drm_format_info *format;
 	const struct drm_framebuffer_funcs *funcs;
@@ -71177,7 +71177,7 @@ struct drm_framebuffer {
 	unsigned int height;
 	int flags;
 	struct list_head filp_head;
-	struct drm_gem_object *obj[4];
+	struct drm_gem_skelect *skel[4];
 };
 
 struct drm_prime_file_private {
@@ -71203,10 +71203,10 @@ struct drm_file {
 	drm_magic_t magic;
 	struct list_head lhead;
 	struct drm_minor *minor;
-	struct idr object_idr;
+	struct idr skelect_idr;
 	spinlock_t table_lock;
-	struct idr syncobj_idr;
-	spinlock_t syncobj_table_lock;
+	struct idr syncskel_idr;
+	spinlock_t syncskel_table_lock;
 	struct file *filp;
 	void *driver_priv;
 	struct list_head fbs;
@@ -71254,11 +71254,11 @@ struct drm_driver {
 	void (*master_set)(struct drm_device *, struct drm_file *, bool);
 	void (*master_drop)(struct drm_device *, struct drm_file *);
 	void (*debugfs_init)(struct drm_minor *);
-	struct drm_gem_object * (*gem_create_object)(struct drm_device *, size_t);
+	struct drm_gem_skelect * (*gem_create_skelect)(struct drm_device *, size_t);
 	int (*prime_handle_to_fd)(struct drm_device *, struct drm_file *, uint32_t, uint32_t, int *);
 	int (*prime_fd_to_handle)(struct drm_device *, struct drm_file *, int, uint32_t *);
-	struct drm_gem_object * (*gem_prime_import)(struct drm_device *, struct dma_buf *);
-	struct drm_gem_object * (*gem_prime_import_sg_table)(struct drm_device *, struct dma_buf_attachment *, struct sg_table *);
+	struct drm_gem_skelect * (*gem_prime_import)(struct drm_device *, struct dma_buf *);
+	struct drm_gem_skelect * (*gem_prime_import_sg_table)(struct drm_device *, struct dma_buf_attachment *, struct sg_table *);
 	int (*dumb_create)(struct drm_file *, struct drm_device *, struct drm_mode_create_dumb *);
 	int (*dumb_map_offset)(struct drm_file *, struct drm_device *, uint32_t, uint64_t *);
 	void (*show_fdinfo)(struct drm_printer *, struct drm_file *);
@@ -71377,7 +71377,7 @@ struct drm_plane {
 	struct list_head head;
 	char *name;
 	struct drm_modeset_lock mutex;
-	struct drm_mode_object base;
+	struct drm_mode_skelect base;
 	uint32_t possible_crtcs;
 	uint32_t *format_types;
 	unsigned int format_count;
@@ -71388,7 +71388,7 @@ struct drm_plane {
 	struct drm_framebuffer *fb;
 	struct drm_framebuffer *old_fb;
 	const struct drm_plane_funcs *funcs;
-	struct drm_object_properties properties;
+	struct drm_skelect_properties properties;
 	enum drm_plane_type type;
 	unsigned int index;
 	const struct drm_plane_helper_funcs *helper_private;
@@ -71580,28 +71580,28 @@ struct __drm_connnectors_state {
 
 struct drm_private_state;
 
-struct drm_private_obj;
+struct drm_private_skel;
 
 struct drm_private_state_funcs {
-	struct drm_private_state * (*atomic_duplicate_state)(struct drm_private_obj *);
-	void (*atomic_destroy_state)(struct drm_private_obj *, struct drm_private_state *);
+	struct drm_private_state * (*atomic_duplicate_state)(struct drm_private_skel *);
+	void (*atomic_destroy_state)(struct drm_private_skel *, struct drm_private_state *);
 	void (*atomic_print_state)(struct drm_printer *, const struct drm_private_state *);
 };
 
 struct drm_private_state {
 	struct drm_atomic_state *state;
-	struct drm_private_obj *obj;
+	struct drm_private_skel *skel;
 };
 
-struct drm_private_obj {
+struct drm_private_skel {
 	struct list_head head;
 	struct drm_modeset_lock lock;
 	struct drm_private_state *state;
 	const struct drm_private_state_funcs *funcs;
 };
 
-struct __drm_private_objs_state {
-	struct drm_private_obj *ptr;
+struct __drm_private_skels_state {
+	struct drm_private_skel *ptr;
 	struct drm_private_state *state;
 	struct drm_private_state *old_state;
 	struct drm_private_state *new_state;
@@ -71631,8 +71631,8 @@ enum drm_driver_feature {
 	DRIVER_MODESET = 2,
 	DRIVER_RENDER = 8,
 	DRIVER_ATOMIC = 16,
-	DRIVER_SYNCOBJ = 32,
-	DRIVER_SYNCOBJ_TIMELINE = 64,
+	DRIVER_SYNCskel = 32,
+	DRIVER_SYNCskel_TIMELINE = 64,
 	DRIVER_COMPUTE_ACCEL = 128,
 	DRIVER_GEM_GPUVA = 256,
 	DRIVER_CURSOR_HOTSPOT = 512,
@@ -71758,7 +71758,7 @@ struct drm_client_dev {
 struct drm_client_buffer {
 	struct drm_client_dev *client;
 	u32 pitch;
-	struct drm_gem_object *gem;
+	struct drm_gem_skelect *gem;
 	struct iosys_map map;
 	struct drm_framebuffer *fb;
 };
@@ -71770,11 +71770,11 @@ struct drm_vma_offset_node {
 	void *driver_private;
 };
 
-struct drm_gem_object_funcs;
+struct drm_gem_skelect_funcs;
 
 struct drm_gem_lru;
 
-struct drm_gem_object {
+struct drm_gem_skelect {
 	struct kref refcount;
 	unsigned int handle_count;
 	struct drm_device *dev;
@@ -71789,31 +71789,31 @@ struct drm_gem_object {
 	struct {
 		struct list_head list;
 	} gpuva;
-	const struct drm_gem_object_funcs *funcs;
+	const struct drm_gem_skelect_funcs *funcs;
 	struct list_head lru_node;
 	struct drm_gem_lru *lru;
 };
 
-enum drm_gem_object_status {
-	DRM_GEM_OBJECT_RESIDENT = 1,
-	DRM_GEM_OBJECT_PURGEABLE = 2,
+enum drm_gem_skelect_status {
+	DRM_GEM_skelECT_RESIDENT = 1,
+	DRM_GEM_skelECT_PURGEABLE = 2,
 };
 
-struct drm_gem_object_funcs {
-	void (*free)(struct drm_gem_object *);
-	int (*open)(struct drm_gem_object *, struct drm_file *);
-	void (*close)(struct drm_gem_object *, struct drm_file *);
-	void (*print_info)(struct drm_printer *, unsigned int, const struct drm_gem_object *);
-	struct dma_buf * (*export)(struct drm_gem_object *, int);
-	int (*pin)(struct drm_gem_object *);
-	void (*unpin)(struct drm_gem_object *);
-	struct sg_table * (*get_sg_table)(struct drm_gem_object *);
-	int (*vmap)(struct drm_gem_object *, struct iosys_map *);
-	void (*vunmap)(struct drm_gem_object *, struct iosys_map *);
-	int (*mmap)(struct drm_gem_object *, struct vm_area_struct *);
-	int (*evict)(struct drm_gem_object *);
-	enum drm_gem_object_status (*status)(struct drm_gem_object *);
-	size_t (*rss)(struct drm_gem_object *);
+struct drm_gem_skelect_funcs {
+	void (*free)(struct drm_gem_skelect *);
+	int (*open)(struct drm_gem_skelect *, struct drm_file *);
+	void (*close)(struct drm_gem_skelect *, struct drm_file *);
+	void (*print_info)(struct drm_printer *, unsigned int, const struct drm_gem_skelect *);
+	struct dma_buf * (*export)(struct drm_gem_skelect *, int);
+	int (*pin)(struct drm_gem_skelect *);
+	void (*unpin)(struct drm_gem_skelect *);
+	struct sg_table * (*get_sg_table)(struct drm_gem_skelect *);
+	int (*vmap)(struct drm_gem_skelect *, struct iosys_map *);
+	void (*vunmap)(struct drm_gem_skelect *, struct iosys_map *);
+	int (*mmap)(struct drm_gem_skelect *, struct vm_area_struct *);
+	int (*evict)(struct drm_gem_skelect *);
+	enum drm_gem_skelect_status (*status)(struct drm_gem_skelect *);
+	size_t (*rss)(struct drm_gem_skelect *);
 	const struct vm_operations_struct *vm_ops;
 };
 
@@ -71876,11 +71876,11 @@ struct drm_mode_connector_set_property {
 	__u32 connector_id;
 };
 
-struct drm_mode_obj_set_property {
+struct drm_mode_skel_set_property {
 	__u64 value;
 	__u32 prop_id;
-	__u32 obj_id;
-	__u32 obj_type;
+	__u32 skel_id;
+	__u32 skel_type;
 };
 
 struct drm_prop_enum_list {
@@ -72198,7 +72198,7 @@ struct drm_bridge_timings;
 struct drm_bridge_funcs;
 
 struct drm_bridge {
-	struct drm_private_obj base;
+	struct drm_private_skel base;
 	struct drm_device *dev;
 	struct drm_encoder *encoder;
 	struct list_head chain_node;
@@ -79055,8 +79055,8 @@ struct dm_ima_measurements {
 	unsigned int dm_version_str_len;
 };
 
-struct dm_kobject_holder {
-	struct kobject kobj;
+struct dm_kskelect_holder {
+	struct kskelect kskel;
 	struct completion completion;
 };
 
@@ -79107,7 +79107,7 @@ struct mapped_device {
 	struct semaphore swap_bios_semaphore;
 	struct mutex swap_bios_lock;
 	struct dm_md_mempools *mempools;
-	struct dm_kobject_holder kobj_holder;
+	struct dm_kskelect_holder kskel_holder;
 	struct srcu_struct io_barrier;
 	unsigned int nr_zones;
 	unsigned int *zwp_offset;
@@ -79292,13 +79292,13 @@ struct edac_device_ctl_info {
 	struct edac_device_block *blocks;
 	struct edac_dev_sysfs_block_attribute *attribs;
 	struct edac_device_counter counters;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct edac_dev_sysfs_block_attribute {
 	struct attribute attr;
-	ssize_t (*show)(struct kobject *, struct attribute *, char *);
-	ssize_t (*store)(struct kobject *, struct attribute *, const char *, size_t);
+	ssize_t (*show)(struct kskelect *, struct attribute *, char *);
+	ssize_t (*store)(struct kskelect *, struct attribute *, const char *, size_t);
 	struct edac_device_block *block;
 	unsigned int value;
 };
@@ -79309,7 +79309,7 @@ struct edac_device_block {
 	struct edac_device_counter counters;
 	int nr_attribs;
 	struct edac_dev_sysfs_block_attribute *block_attributes;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct edac_device_instance {
@@ -79318,7 +79318,7 @@ struct edac_device_instance {
 	struct edac_device_counter counters;
 	u32 nr_blocks;
 	struct edac_device_block *blocks;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct edac_pci_counter {
@@ -79342,7 +79342,7 @@ struct edac_pci_ctl_info {
 	struct completion complete;
 	char name[32];
 	struct edac_pci_counter counters;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct instance_attribute {
@@ -80081,7 +80081,7 @@ struct edd_device {
 	unsigned int index;
 	unsigned int mbr_signature;
 	struct edd_info *info;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct edd_attribute {
@@ -87489,13 +87489,13 @@ enum devlink_attr {
 	DEVLINK_ATTR_INFO_VERSION_VALUE = 104,
 	DEVLINK_ATTR_SB_POOL_CELL_SIZE = 105,
 	DEVLINK_ATTR_FMSG = 106,
-	DEVLINK_ATTR_FMSG_OBJ_NEST_START = 107,
+	DEVLINK_ATTR_FMSG_skel_NEST_START = 107,
 	DEVLINK_ATTR_FMSG_PAIR_NEST_START = 108,
 	DEVLINK_ATTR_FMSG_ARR_NEST_START = 109,
 	DEVLINK_ATTR_FMSG_NEST_END = 110,
-	DEVLINK_ATTR_FMSG_OBJ_NAME = 111,
-	DEVLINK_ATTR_FMSG_OBJ_VALUE_TYPE = 112,
-	DEVLINK_ATTR_FMSG_OBJ_VALUE_DATA = 113,
+	DEVLINK_ATTR_FMSG_skel_NAME = 111,
+	DEVLINK_ATTR_FMSG_skel_VALUE_TYPE = 112,
+	DEVLINK_ATTR_FMSG_skel_VALUE_DATA = 113,
 	DEVLINK_ATTR_HEALTH_REPORTER = 114,
 	DEVLINK_ATTR_HEALTH_REPORTER_NAME = 115,
 	DEVLINK_ATTR_HEALTH_REPORTER_STATE = 116,
@@ -87767,7 +87767,7 @@ struct devlink_nl_dump_state {
 
 typedef int devlink_nl_dump_one_func_t(struct sk_buff *, struct devlink *, struct netlink_callback *, int);
 
-struct devlink_obj_desc {
+struct devlink_skel_desc {
 	struct callback_head rcu;
 	const char *bus_name;
 	const char *dev_name;
@@ -87777,7 +87777,7 @@ struct devlink_obj_desc {
 };
 
 struct devlink_nl_sock_priv {
-	struct devlink_obj_desc *flt;
+	struct devlink_skel_desc *flt;
 	spinlock_t flt_lock;
 };
 
@@ -87995,52 +87995,52 @@ struct switchdev_vlan_msti {
 	u16 msti;
 };
 
-enum switchdev_obj_id {
-	SWITCHDEV_OBJ_ID_UNDEFINED = 0,
-	SWITCHDEV_OBJ_ID_PORT_VLAN = 1,
-	SWITCHDEV_OBJ_ID_PORT_MDB = 2,
-	SWITCHDEV_OBJ_ID_HOST_MDB = 3,
-	SWITCHDEV_OBJ_ID_MRP = 4,
-	SWITCHDEV_OBJ_ID_RING_TEST_MRP = 5,
-	SWITCHDEV_OBJ_ID_RING_ROLE_MRP = 6,
-	SWITCHDEV_OBJ_ID_RING_STATE_MRP = 7,
-	SWITCHDEV_OBJ_ID_IN_TEST_MRP = 8,
-	SWITCHDEV_OBJ_ID_IN_ROLE_MRP = 9,
-	SWITCHDEV_OBJ_ID_IN_STATE_MRP = 10,
+enum switchdev_skel_id {
+	SWITCHDEV_skel_ID_UNDEFINED = 0,
+	SWITCHDEV_skel_ID_PORT_VLAN = 1,
+	SWITCHDEV_skel_ID_PORT_MDB = 2,
+	SWITCHDEV_skel_ID_HOST_MDB = 3,
+	SWITCHDEV_skel_ID_MRP = 4,
+	SWITCHDEV_skel_ID_RING_TEST_MRP = 5,
+	SWITCHDEV_skel_ID_RING_ROLE_MRP = 6,
+	SWITCHDEV_skel_ID_RING_STATE_MRP = 7,
+	SWITCHDEV_skel_ID_IN_TEST_MRP = 8,
+	SWITCHDEV_skel_ID_IN_ROLE_MRP = 9,
+	SWITCHDEV_skel_ID_IN_STATE_MRP = 10,
 };
 
-struct switchdev_obj {
+struct switchdev_skel {
 	struct list_head list;
 	struct net_device *orig_dev;
-	enum switchdev_obj_id id;
+	enum switchdev_skel_id id;
 	u32 flags;
 	void *complete_priv;
 	void (*complete)(struct net_device *, int, void *);
 };
 
-struct switchdev_obj_port_vlan {
-	struct switchdev_obj obj;
+struct switchdev_skel_port_vlan {
+	struct switchdev_skel skel;
 	u16 flags;
 	u16 vid;
 	bool changed;
 };
 
-struct switchdev_obj_port_mdb {
-	struct switchdev_obj obj;
+struct switchdev_skel_port_mdb {
+	struct switchdev_skel skel;
 	unsigned char addr[6];
 	u16 vid;
 };
 
-struct switchdev_obj_mrp {
-	struct switchdev_obj obj;
+struct switchdev_skel_mrp {
+	struct switchdev_skel skel;
 	struct net_device *p_port;
 	struct net_device *s_port;
 	u32 ring_id;
 	u16 prio;
 };
 
-struct switchdev_obj_ring_role_mrp {
-	struct switchdev_obj obj;
+struct switchdev_skel_ring_role_mrp {
+	struct switchdev_skel skel;
 	u8 ring_role;
 	u32 ring_id;
 	u8 sw_backup;
@@ -88253,16 +88253,16 @@ struct dsa_switch_ops {
 	int (*port_bridge_flags)(struct dsa_switch *, int, struct switchdev_brport_flags, struct netlink_ext_ack *);
 	void (*port_set_host_flood)(struct dsa_switch *, int, bool, bool);
 	int (*port_vlan_filtering)(struct dsa_switch *, int, bool, struct netlink_ext_ack *);
-	int (*port_vlan_add)(struct dsa_switch *, int, const struct switchdev_obj_port_vlan *, struct netlink_ext_ack *);
-	int (*port_vlan_del)(struct dsa_switch *, int, const struct switchdev_obj_port_vlan *);
+	int (*port_vlan_add)(struct dsa_switch *, int, const struct switchdev_skel_port_vlan *, struct netlink_ext_ack *);
+	int (*port_vlan_del)(struct dsa_switch *, int, const struct switchdev_skel_port_vlan *);
 	int (*vlan_msti_set)(struct dsa_switch *, struct dsa_bridge, const struct switchdev_vlan_msti *);
 	int (*port_fdb_add)(struct dsa_switch *, int, const unsigned char *, u16, struct dsa_db);
 	int (*port_fdb_del)(struct dsa_switch *, int, const unsigned char *, u16, struct dsa_db);
 	int (*port_fdb_dump)(struct dsa_switch *, int, dsa_fdb_dump_cb_t *, void *);
 	int (*lag_fdb_add)(struct dsa_switch *, struct dsa_lag, const unsigned char *, u16, struct dsa_db);
 	int (*lag_fdb_del)(struct dsa_switch *, struct dsa_lag, const unsigned char *, u16, struct dsa_db);
-	int (*port_mdb_add)(struct dsa_switch *, int, const struct switchdev_obj_port_mdb *, struct dsa_db);
-	int (*port_mdb_del)(struct dsa_switch *, int, const struct switchdev_obj_port_mdb *, struct dsa_db);
+	int (*port_mdb_add)(struct dsa_switch *, int, const struct switchdev_skel_port_mdb *, struct dsa_db);
+	int (*port_mdb_del)(struct dsa_switch *, int, const struct switchdev_skel_port_mdb *, struct dsa_db);
 	int (*get_rxnfc)(struct dsa_switch *, int, struct ethtool_rxnfc *, u32 *);
 	int (*set_rxnfc)(struct dsa_switch *, int, struct ethtool_rxnfc *);
 	int (*cls_flower_add)(struct dsa_switch *, int, struct flow_cls_offload *, bool);
@@ -88302,10 +88302,10 @@ struct dsa_switch_ops {
 	int (*port_lag_leave)(struct dsa_switch *, int, struct dsa_lag);
 	int (*port_hsr_join)(struct dsa_switch *, int, struct net_device *, struct netlink_ext_ack *);
 	int (*port_hsr_leave)(struct dsa_switch *, int, struct net_device *);
-	int (*port_mrp_add)(struct dsa_switch *, int, const struct switchdev_obj_mrp *);
-	int (*port_mrp_del)(struct dsa_switch *, int, const struct switchdev_obj_mrp *);
-	int (*port_mrp_add_ring_role)(struct dsa_switch *, int, const struct switchdev_obj_ring_role_mrp *);
-	int (*port_mrp_del_ring_role)(struct dsa_switch *, int, const struct switchdev_obj_ring_role_mrp *);
+	int (*port_mrp_add)(struct dsa_switch *, int, const struct switchdev_skel_mrp *);
+	int (*port_mrp_del)(struct dsa_switch *, int, const struct switchdev_skel_mrp *);
+	int (*port_mrp_add_ring_role)(struct dsa_switch *, int, const struct switchdev_skel_ring_role_mrp *);
+	int (*port_mrp_del_ring_role)(struct dsa_switch *, int, const struct switchdev_skel_ring_role_mrp *);
 	int (*tag_8021q_vlan_add)(struct dsa_switch *, int, u16, u16);
 	int (*tag_8021q_vlan_del)(struct dsa_switch *, int, u16);
 	void (*conduit_state_change)(struct dsa_switch *, const struct net_device *, bool);
@@ -92384,12 +92384,12 @@ struct threshold_block {
 	u16 interrupt_enable;
 	bool interrupt_capable;
 	u16 threshold_limit;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head miscj;
 };
 
 struct threshold_bank {
-	struct kobject *kobj;
+	struct kskelect *kskel;
 	struct threshold_block *blocks;
 	refcount_t cpus;
 	unsigned int shared;
@@ -93956,7 +93956,7 @@ struct klp_func {
 	void *new_func;
 	long unsigned int old_sympos;
 	void *old_func;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head node;
 	struct list_head stack_node;
 	long unsigned int old_size;
@@ -93966,21 +93966,21 @@ struct klp_func {
 	bool transition;
 };
 
-struct klp_object;
+struct klp_skelect;
 
 struct klp_callbacks {
-	int (*pre_patch)(struct klp_object *);
-	void (*post_patch)(struct klp_object *);
-	void (*pre_unpatch)(struct klp_object *);
-	void (*post_unpatch)(struct klp_object *);
+	int (*pre_patch)(struct klp_skelect *);
+	void (*post_patch)(struct klp_skelect *);
+	void (*pre_unpatch)(struct klp_skelect *);
+	void (*post_unpatch)(struct klp_skelect *);
 	bool post_unpatch_enabled;
 };
 
-struct klp_object {
+struct klp_skelect {
 	const char *name;
 	struct klp_func *funcs;
 	struct klp_callbacks callbacks;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head func_list;
 	struct list_head node;
 	struct module *mod;
@@ -93996,12 +93996,12 @@ struct klp_state {
 
 struct klp_patch {
 	struct module *mod;
-	struct klp_object *objs;
+	struct klp_skelect *skels;
 	struct klp_state *states;
 	bool replace;
 	struct list_head list;
-	struct kobject kobj;
-	struct list_head obj_list;
+	struct kskelect kskel;
+	struct list_head skel_list;
 	bool enabled;
 	bool forced;
 	struct work_struct free_work;
@@ -94157,7 +94157,7 @@ struct compat_rusage {
 
 enum rdmacg_resource_type {
 	RDMACG_RESOURCE_HCA_HANDLE = 0,
-	RDMACG_RESOURCE_HCA_OBJECT = 1,
+	RDMACG_RESOURCE_HCA_skelECT = 1,
 	RDMACG_RESOURCE_MAX = 2,
 };
 
@@ -95469,7 +95469,7 @@ struct bpf_call_arg_meta {
 	int access_size;
 	int mem_size;
 	u64 msize_max_value;
-	int ref_obj_id;
+	int ref_skel_id;
 	int dynptr_id;
 	int map_uid;
 	int func_id;
@@ -95487,7 +95487,7 @@ struct bpf_kfunc_call_arg_meta {
 	u32 kfunc_flags;
 	const struct btf_type *func_proto;
 	const char *func_name;
-	u32 ref_obj_id;
+	u32 ref_skel_id;
 	u8 release_regno;
 	bool r0_rdonly;
 	u32 ret_btf_id;
@@ -95509,7 +95509,7 @@ struct bpf_kfunc_call_arg_meta {
 	struct {
 		enum bpf_dynptr_type type;
 		u32 id;
-		u32 ref_obj_id;
+		u32 ref_skel_id;
 	} initialized_dynptr;
 	struct {
 		u8 spi;
@@ -95620,8 +95620,8 @@ enum kfunc_ptr_arg_type {
 };
 
 enum special_kfunc_type {
-	KF_bpf_obj_new_impl = 0,
-	KF_bpf_obj_drop_impl = 1,
+	KF_bpf_skel_new_impl = 0,
+	KF_bpf_skel_drop_impl = 1,
 	KF_bpf_refcount_acquire_impl = 2,
 	KF_bpf_list_push_front_impl = 3,
 	KF_bpf_list_push_back_impl = 4,
@@ -95639,8 +95639,8 @@ enum special_kfunc_type {
 	KF_bpf_dynptr_slice = 16,
 	KF_bpf_dynptr_slice_rdwr = 17,
 	KF_bpf_dynptr_clone = 18,
-	KF_bpf_percpu_obj_new_impl = 19,
-	KF_bpf_percpu_obj_drop_impl = 20,
+	KF_bpf_percpu_skel_new_impl = 19,
+	KF_bpf_percpu_skel_drop_impl = 20,
 	KF_bpf_throw = 21,
 	KF_bpf_iter_css_task_new = 22,
 };
@@ -95878,7 +95878,7 @@ struct bpf_cpu_map_entry;
 struct xdp_bulk_queue {
 	void *q[8];
 	struct list_head flush_node;
-	struct bpf_cpu_map_entry *obj;
+	struct bpf_cpu_map_entry *skel;
 	unsigned int count;
 };
 
@@ -96807,14 +96807,14 @@ struct kmem_cache_node {
 	long unsigned int nr_partial;
 	struct list_head partial;
 	atomic_long_t nr_slabs;
-	atomic_long_t total_objects;
+	atomic_long_t total_skelects;
 	struct list_head full;
 };
 
 struct partial_context {
 	gfp_t flags;
 	unsigned int orig_size;
-	void *object;
+	void *skelect;
 };
 
 struct track {
@@ -96903,7 +96903,7 @@ enum slab_stat_type {
 	SL_ALL = 0,
 	SL_PARTIAL = 1,
 	SL_CPU = 2,
-	SL_OBJECTS = 3,
+	SL_skelECTS = 3,
 	SL_TOTAL = 4,
 };
 
@@ -96957,7 +96957,7 @@ struct zswap_entry {
 		long unsigned int handle;
 		long unsigned int value;
 	};
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 	struct list_head lru;
 };
 
@@ -97015,10 +97015,10 @@ struct queue_pages {
 	long int nr_failed;
 };
 
-enum kfence_object_state {
-	KFENCE_OBJECT_UNUSED = 0,
-	KFENCE_OBJECT_ALLOCATED = 1,
-	KFENCE_OBJECT_FREED = 2,
+enum kfence_skelect_state {
+	KFENCE_skelECT_UNUSED = 0,
+	KFENCE_skelECT_ALLOCATED = 1,
+	KFENCE_skelECT_FREED = 2,
 };
 
 struct kfence_track {
@@ -97033,7 +97033,7 @@ struct kfence_metadata {
 	struct list_head list;
 	struct callback_head callback_head;
 	raw_spinlock_t lock;
-	enum kfence_object_state state;
+	enum kfence_skelect_state state;
 	long unsigned int addr;
 	size_t size;
 	struct kmem_cache *cache;
@@ -97041,7 +97041,7 @@ struct kfence_metadata {
 	struct kfence_track alloc_track;
 	struct kfence_track free_track;
 	u32 alloc_stack_hash;
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 };
 
 enum kfence_error_type {
@@ -97663,7 +97663,7 @@ struct fanotify_fid_event {
 	struct fanotify_event fae;
 	__kernel_fsid_t fsid;
 	struct {
-		struct fanotify_fh object_fh;
+		struct fanotify_fh skelect_fh;
 		unsigned char _inline_fh_buf[12];
 	};
 };
@@ -97680,7 +97680,7 @@ struct fanotify_error_event {
 	u32 err_count;
 	__kernel_fsid_t fsid;
 	struct {
-		struct fanotify_fh object_fh;
+		struct fanotify_fh skelect_fh;
 		unsigned char _inline_fh_buf[128];
 	};
 };
@@ -98069,7 +98069,7 @@ struct elf_note_info {
 	int thread_notes;
 };
 
-struct xdr_netobj {
+struct xdr_netskel {
 	unsigned int len;
 	u8 *data;
 };
@@ -98322,7 +98322,7 @@ struct rpc_clnt {
 	atomic_t cl_swapper;
 	int cl_nodelen;
 	char cl_nodename[65];
-	struct rpc_pipe_dir_head cl_pipedir_objects;
+	struct rpc_pipe_dir_head cl_pipedir_skelects;
 	struct rpc_clnt *cl_parent;
 	struct rpc_rtt cl_rtt_default;
 	struct rpc_timeout cl_timeout_default;
@@ -98697,7 +98697,7 @@ struct rpc_xprt_iter_ops {
 };
 
 struct rpc_sysfs_client {
-	struct kobject kobject;
+	struct kskelect kskelect;
 	struct net *net;
 	struct rpc_clnt *clnt;
 	struct rpc_xprt_switch *xprt_switch;
@@ -98810,8 +98810,8 @@ struct auth_domain {
 
 struct gss_api_ops {
 	int (*gss_import_sec_context)(const void *, size_t, struct gss_ctx *, time64_t *, gfp_t);
-	u32 (*gss_get_mic)(struct gss_ctx *, struct xdr_buf *, struct xdr_netobj *);
-	u32 (*gss_verify_mic)(struct gss_ctx *, struct xdr_buf *, struct xdr_netobj *);
+	u32 (*gss_get_mic)(struct gss_ctx *, struct xdr_buf *, struct xdr_netskel *);
+	u32 (*gss_verify_mic)(struct gss_ctx *, struct xdr_buf *, struct xdr_netskel *);
 	u32 (*gss_wrap)(struct gss_ctx *, int, struct xdr_buf *, struct page **);
 	u32 (*gss_unwrap)(struct gss_ctx *, int, int, struct xdr_buf *);
 	void (*gss_delete_sec_context)(void *);
@@ -99047,7 +99047,7 @@ struct nfs_server {
 	unsigned int read_hdrsize;
 	const struct cred *cred;
 	bool has_sec_mnt_opts;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct callback_head rcu;
 };
 
@@ -100856,7 +100856,7 @@ enum tpm2_permanent_handles {
 	TPM2_RS_PW = 1073741833,
 };
 
-enum tpm2_object_attributes {
+enum tpm2_skelect_attributes {
 	TPM2_OA_FIXED_TPM = 2,
 	TPM2_OA_FIXED_PARENT = 16,
 	TPM2_OA_USER_WITH_AUTH = 64,
@@ -104022,7 +104022,7 @@ enum {
 
 struct acpi_device_properties {
 	const guid_t *guid;
-	union acpi_object *properties;
+	union acpi_skelect *properties;
 	struct list_head list;
 	void **bufs;
 };
@@ -104140,15 +104140,15 @@ struct acpi_device_walk_info {
 	u32 num_INI;
 };
 
-typedef acpi_status (*acpi_pkg_callback)(u8, union acpi_operand_object *, union acpi_generic_state *, void *);
+typedef acpi_status (*acpi_pkg_callback)(u8, union acpi_operand_skelect *, union acpi_generic_state *, void *);
 
-typedef acpi_status (*acpi_object_converter)(struct acpi_namespace_node *, union acpi_operand_object *, union acpi_operand_object **);
+typedef acpi_status (*acpi_skelect_converter)(struct acpi_namespace_node *, union acpi_operand_skelect *, union acpi_operand_skelect **);
 
 struct acpi_simple_repair_info {
 	char name[4];
 	u32 unexpected_btypes;
 	u32 package_index;
-	acpi_object_converter object_converter;
+	acpi_skelect_converter skelect_converter;
 };
 
 enum acpi_return_package_types {
@@ -104170,7 +104170,7 @@ enum acpi_return_package_types {
 struct acpi_pkg_info {
 	u8 *free_space;
 	acpi_size length;
-	u32 object_space;
+	u32 skelect_space;
 	u32 num_packages;
 };
 
@@ -104188,9 +104188,9 @@ struct acpi_db_method_info {
 	u32 num_loops;
 	char pathname[512];
 	char **args;
-	acpi_object_type *types;
+	acpi_skelect_type *types;
 	char init_args;
-	acpi_object_type arg_types[7];
+	acpi_skelect_type arg_types[7];
 	char *arguments[7];
 	char num_threads_str[11];
 	char id_of_thread_str[11];
@@ -104281,7 +104281,7 @@ struct acpi_pcct_shared_memory {
 };
 
 struct cpc_register_resource {
-	acpi_object_type type;
+	acpi_skelect_type type;
 	u64 *sys_mem_vaddr;
 	union {
 		struct cpc_reg reg;
@@ -104297,7 +104297,7 @@ struct cpc_desc {
 	int write_cmd_id;
 	struct cpc_register_resource cpc_regs[21];
 	struct acpi_psd_package domain_info;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 enum cppc_regs {
@@ -106228,11 +106228,11 @@ struct class_attribute_string {
 };
 
 struct class_compat {
-	struct kobject *kobj;
+	struct kskelect *kskel;
 };
 
 struct swnode {
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct fwnode_handle fwnode;
 	const struct software_node *node;
 	int id;
@@ -106427,7 +106427,7 @@ struct xenbus_driver {
 	void (*remove)(struct xenbus_device *);
 	int (*suspend)(struct xenbus_device *);
 	int (*resume)(struct xenbus_device *);
-	int (*uevent)(const struct xenbus_device *, struct kobj_uevent_env *);
+	int (*uevent)(const struct xenbus_device *, struct kskel_uevent_env *);
 	struct device_driver driver;
 	int (*read_otherend_details)(struct xenbus_device *);
 	int (*is_ready)(struct xenbus_device *);
@@ -108160,8 +108160,8 @@ struct cea_db {
 };
 
 struct drm_mode_create_lease {
-	__u64 object_ids;
-	__u32 object_count;
+	__u64 skelect_ids;
+	__u32 skelect_count;
 	__u32 flags;
 	__u32 lessee_id;
 	__u32 fd;
@@ -108174,9 +108174,9 @@ struct drm_mode_list_lessees {
 };
 
 struct drm_mode_get_lease {
-	__u32 count_objects;
+	__u32 count_skelects;
 	__u32 pad;
-	__u64 objects_ptr;
+	__u64 skelects_ptr;
 };
 
 struct drm_mode_revoke_lease {
@@ -108333,8 +108333,8 @@ struct drm_panel_follower {
 	struct drm_panel *panel;
 };
 
-struct drm_gem_shmem_object {
-	struct drm_gem_object base;
+struct drm_gem_shmem_skelect {
+	struct drm_gem_skelect base;
 	struct page **pages;
 	unsigned int pages_use_count;
 	int madv;
@@ -109681,7 +109681,7 @@ struct mddev {
 	int ro;
 	int sysfs_active;
 	struct gendisk *gendisk;
-	struct kobject kobj;
+	struct kskelect kskel;
 	int hold_active;
 	int major_version;
 	int minor_version;
@@ -109814,7 +109814,7 @@ struct md_rdev {
 	sector_t sb_start;
 	int sb_size;
 	int preferred_minor;
-	struct kobject kobj;
+	struct kskelect kskel;
 	long unsigned int flags;
 	wait_queue_head_t blocked_wait;
 	int desc_nr;
@@ -110531,7 +110531,7 @@ struct policy_dbs_info;
 
 struct dbs_governor {
 	struct cpufreq_governor gov;
-	struct kobj_type kobj_type;
+	struct kskel_type kskel_type;
 	struct dbs_data *gdbs_data;
 	unsigned int (*gov_dbs_update)(struct cpufreq_policy *);
 	struct policy_dbs_info * (*alloc)();
@@ -110635,18 +110635,18 @@ struct pcc_cpu {
 	u32 output_offset;
 };
 
-struct cpuidle_state_kobj {
+struct cpuidle_state_kskel {
 	struct cpuidle_state *state;
 	struct cpuidle_state_usage *state_usage;
-	struct completion kobj_unregister;
-	struct kobject kobj;
+	struct completion kskel_unregister;
+	struct kskelect kskel;
 	struct cpuidle_device *device;
 };
 
-struct cpuidle_device_kobj {
+struct cpuidle_device_kskel {
 	struct cpuidle_device *dev;
-	struct completion kobj_unregister;
-	struct kobject kobj;
+	struct completion kskel_unregister;
+	struct kskelect kskel;
 };
 
 struct cpuidle_attr {
@@ -110882,7 +110882,7 @@ struct esre_entry {
 	union {
 		struct efi_system_resource_entry_v1 *esre1;
 	} esre;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct list_head list;
 };
 
@@ -113333,7 +113333,7 @@ struct netdev_rx_queue {
 	struct xdp_rxq_info xdp_rxq;
 	struct rps_map *rps_map;
 	struct rps_dev_flow_table *rps_flow_table;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct net_device *dev;
 	netdevice_tracker dev_tracker;
 	struct xsk_buff_pool *pool;
@@ -114126,7 +114126,7 @@ struct icmp_ext_hdr {
 	__sum16 checksum;
 };
 
-struct icmp_extobj_hdr {
+struct icmp_extskel_hdr {
 	__be16 length;
 	__u8 class_num;
 	__u8 class_type;
@@ -114139,7 +114139,7 @@ struct icmp_ext_echo_ctype3_hdr {
 };
 
 struct icmp_ext_echo_iio {
-	struct icmp_extobj_hdr extobj_hdr;
+	struct icmp_extskel_hdr extskel_hdr;
 	union {
 		char name[16];
 		__be32 ifindex;
@@ -117851,7 +117851,7 @@ struct numa_meminfo {
 
 struct efi_runtime_map_entry {
 	efi_memory_desc_t md;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct map_attribute {
@@ -120631,7 +120631,7 @@ struct btf_show {
 		void *head;
 		void *data;
 		u8 safe[32];
-	} obj;
+	} skel;
 };
 
 struct btf_kind_operations {
@@ -120988,7 +120988,7 @@ struct trace_event_raw_mm_shrink_slab_start {
 	struct shrinker *shr;
 	void *shrink;
 	int nid;
-	long int nr_objects_to_shrink;
+	long int nr_skelects_to_shrink;
 	long unsigned int gfp_flags;
 	long unsigned int cache_items;
 	long long unsigned int delta;
@@ -121625,7 +121625,7 @@ struct memcg_stock_pcp {
 	local_lock_t stock_lock;
 	struct mem_cgroup *cached;
 	unsigned int nr_pages;
-	struct obj_cgroup *cached_objcg;
+	struct skel_cgroup *cached_skelcg;
 	struct pglist_data *cached_pgdat;
 	unsigned int nr_bytes;
 	int nr_slab_reclaimable_b;
@@ -121698,7 +121698,7 @@ struct backing_file {
 	struct path user_path;
 };
 
-typedef struct kobject *kobj_probe_t(dev_t, int *, void *);
+typedef struct kskelect *kskel_probe_t(dev_t, int *, void *);
 
 struct char_device_struct {
 	struct char_device_struct *next;
@@ -121917,7 +121917,7 @@ enum {
 
 struct io_event {
 	__u64 data;
-	__u64 obj;
+	__u64 skel;
 	__s64 res;
 	__s64 res2;
 };
@@ -123729,7 +123729,7 @@ struct dev_cgroup {
 };
 
 struct landlock_inode_security {
-	struct landlock_object *object;
+	struct landlock_skelect *skelect;
 };
 
 struct landlock_file_security {
@@ -124165,7 +124165,7 @@ struct vblk_volu {
 
 struct vblk {
 	u8 name[64];
-	u64 obj_id;
+	u64 skel_id;
 	u32 sequence;
 	u8 flags;
 	u8 type;
@@ -124833,7 +124833,7 @@ struct ts_linear_state {
 struct cpu_rmap {
 	struct kref refcount;
 	u16 size;
-	void **obj;
+	void **skel;
 	struct {
 		u16 index;
 		u16 dist;
@@ -125954,7 +125954,7 @@ enum acpi_ex_debugger_commands {
 	CMD_METHODS = 32,
 	CMD_NAMESPACE = 33,
 	CMD_NOTIFY = 34,
-	CMD_OBJECTS = 35,
+	CMD_skelECTS = 35,
 	CMD_OSI = 36,
 	CMD_OWNER = 37,
 	CMD_PATHS = 38,
@@ -126877,12 +126877,12 @@ struct probe {
 	dev_t dev;
 	long unsigned int range;
 	struct module *owner;
-	kobj_probe_t *get;
+	kskel_probe_t *get;
 	int (*lock)(dev_t, void *);
 	void *data;
 };
 
-struct kobj_map {
+struct kskel_map {
 	struct probe *probes[255];
 	struct mutex *lock;
 };
@@ -128307,12 +128307,12 @@ struct drm_mm_scan {
 	enum drm_mm_insert_mode mode;
 };
 
-struct drm_mode_obj_get_properties {
+struct drm_mode_skel_get_properties {
 	__u64 props_ptr;
 	__u64 prop_values_ptr;
 	__u32 count_props;
-	__u32 obj_id;
-	__u32 obj_type;
+	__u32 skel_id;
+	__u32 skel_type;
 };
 
 struct drm_prime_handle {
@@ -128413,11 +128413,11 @@ struct drm_mode_fb_cmd232 {
 struct drm_exec {
 	uint32_t flags;
 	struct ww_acquire_ctx ticket;
-	unsigned int num_objects;
-	unsigned int max_objects;
-	struct drm_gem_object **objects;
-	struct drm_gem_object *contended;
-	struct drm_gem_object *prelocked;
+	unsigned int num_skelects;
+	unsigned int max_skelects;
+	struct drm_gem_skelect **skelects;
+	struct drm_gem_skelect *contended;
+	struct drm_gem_skelect *prelocked;
 };
 
 enum drm_gpuva_flags {
@@ -128440,7 +128440,7 @@ struct drm_gpuva {
 	} va;
 	struct {
 		u64 offset;
-		struct drm_gem_object *obj;
+		struct drm_gem_skelect *skel;
 		struct list_head entry;
 	} gem;
 	struct {
@@ -128470,12 +128470,12 @@ struct drm_gpuvm {
 	struct kref kref;
 	struct drm_gpuva kernel_alloc_node;
 	const struct drm_gpuvm_ops *ops;
-	struct drm_gem_object *r_obj;
+	struct drm_gem_skelect *r_skel;
 	struct {
 		struct list_head list;
 		struct list_head *local_list;
 		spinlock_t lock;
-	} extobj;
+	} extskel;
 	struct {
 		struct list_head list;
 		struct list_head *local_list;
@@ -128485,14 +128485,14 @@ struct drm_gpuvm {
 
 struct drm_gpuvm_bo {
 	struct drm_gpuvm *vm;
-	struct drm_gem_object *obj;
+	struct drm_gem_skelect *skel;
 	bool evicted;
 	struct kref kref;
 	struct {
 		struct list_head gpuva;
 		struct {
 			struct list_head gem;
-			struct list_head extobj;
+			struct list_head extskel;
 			struct list_head evict;
 		} entry;
 	} list;
@@ -128526,7 +128526,7 @@ struct drm_gpuva_op_map {
 	} va;
 	struct {
 		u64 offset;
-		struct drm_gem_object *obj;
+		struct drm_gem_skelect *skel;
 	} gem;
 };
 
@@ -129921,7 +129921,7 @@ enum serio_event_type {
 
 struct serio_event {
 	enum serio_event_type type;
-	void *object;
+	void *skelect;
 	struct module *owner;
 	struct list_head node;
 };
@@ -130609,7 +130609,7 @@ struct firmware_map_entry {
 	u64 end;
 	const char *type;
 	struct list_head list;
-	struct kobject kobj;
+	struct kskelect kskel;
 };
 
 struct memmap_attribute {
@@ -132773,7 +132773,7 @@ struct net_bridge {
 	struct timer_list tcn_timer;
 	struct timer_list topology_change_timer;
 	struct delayed_work gc_work;
-	struct kobject *ifobj;
+	struct kskelect *ifskel;
 	u32 auto_cnt;
 	atomic_t fdb_n_learned;
 	u32 fdb_max_learned;
@@ -132824,7 +132824,7 @@ struct net_bridge_port {
 	struct timer_list forward_delay_timer;
 	struct timer_list hold_timer;
 	struct timer_list message_age_timer;
-	struct kobject kobj;
+	struct kskelect kskel;
 	struct callback_head rcu;
 	struct net_bridge_mcast_port multicast_ctx;
 	struct bridge_mcast_stats *mcast_stats;
@@ -137556,7 +137556,7 @@ typedef void (*klp_shadow_dtor_t)(void *, void *);
 struct klp_shadow {
 	struct hlist_node node;
 	struct callback_head callback_head;
-	void *obj;
+	void *skel;
 	long unsigned int id;
 	char data[0];
 };
@@ -137602,7 +137602,7 @@ struct module_sect_attrs {
 };
 
 struct module_notes_attrs {
-	struct kobject *dir;
+	struct kskelect *dir;
 	unsigned int notes;
 	struct bin_attribute attrs[0];
 };
@@ -138038,7 +138038,7 @@ struct trace_probe_log {
 	int index;
 };
 
-typedef int (*objpool_init_obj_cb)(void *, void *);
+typedef int (*skelpool_init_skel_cb)(void *, void *);
 
 enum states_wwnr {
 	not_running_wwnr = 0,
@@ -138068,8 +138068,8 @@ enum bpf_cmd {
 	BPF_MAP_DELETE_ELEM = 3,
 	BPF_MAP_GET_NEXT_KEY = 4,
 	BPF_PROG_LOAD = 5,
-	BPF_OBJ_PIN = 6,
-	BPF_OBJ_GET = 7,
+	BPF_skel_PIN = 6,
+	BPF_skel_GET = 7,
 	BPF_PROG_ATTACH = 8,
 	BPF_PROG_DETACH = 9,
 	BPF_PROG_TEST_RUN = 10,
@@ -138078,7 +138078,7 @@ enum bpf_cmd {
 	BPF_MAP_GET_NEXT_ID = 12,
 	BPF_PROG_GET_FD_BY_ID = 13,
 	BPF_MAP_GET_FD_BY_ID = 14,
-	BPF_OBJ_GET_INFO_BY_FD = 15,
+	BPF_skel_GET_INFO_BY_FD = 15,
 	BPF_PROG_QUERY = 16,
 	BPF_RAW_TRACEPOINT_OPEN = 17,
 	BPF_BTF_LOAD = 18,
@@ -138223,7 +138223,7 @@ struct bpf_mem_cache {
 	local_t active;
 	struct llist_head free_llist_extra;
 	struct irq_work refill_work;
-	struct obj_cgroup *objcg;
+	struct skel_cgroup *skelcg;
 	int unit_size;
 	int free_cnt;
 	int low_watermark;
@@ -138549,7 +138549,7 @@ struct pcpu_chunk {
 	bool isolated;
 	int start_offset;
 	int end_offset;
-	struct obj_cgroup **obj_cgroups;
+	struct skel_cgroup **skel_cgroups;
 	int nr_pages;
 	int nr_populated;
 	int nr_empty_pop_pages;
@@ -138624,8 +138624,8 @@ enum vma_resv_mode {
 };
 
 struct node_hstate {
-	struct kobject *hugepages_kobj;
-	struct kobject *hstate_kobjs[2];
+	struct kskelect *hugepages_kskel;
+	struct kskelect *hstate_kskels[2];
 };
 
 struct kcsan_scoped_access {};
@@ -138723,19 +138723,19 @@ enum fullness_group {
 };
 
 enum class_stat_type {
-	ZS_OBJS_ALLOCATED = 12,
-	ZS_OBJS_INUSE = 13,
+	ZS_skelS_ALLOCATED = 12,
+	ZS_skelS_INUSE = 13,
 	NR_CLASS_STAT_TYPES = 14,
 };
 
 struct zs_size_stat {
-	long unsigned int objs[14];
+	long unsigned int skels[14];
 };
 
 struct size_class {
 	struct list_head fullness_list[12];
 	int size;
-	int objs_per_zspage;
+	int skels_per_zspage;
 	int pages_per_zspage;
 	unsigned int index;
 	struct zs_size_stat stats;
@@ -138770,7 +138770,7 @@ struct zspage {
 		unsigned int magic: 8;
 	};
 	unsigned int inuse;
-	unsigned int freeobj;
+	unsigned int freeskel;
 	struct page *first_page;
 	struct list_head list;
 	struct zs_pool *pool;
@@ -141763,9 +141763,9 @@ struct audit_cache {
 };
 
 enum lsm_rule_types {
-	LSM_OBJ_USER = 0,
-	LSM_OBJ_ROLE = 1,
-	LSM_OBJ_TYPE = 2,
+	LSM_skel_USER = 0,
+	LSM_skel_ROLE = 1,
+	LSM_skel_TYPE = 2,
 	LSM_SUBJ_USER = 3,
 	LSM_SUBJ_ROLE = 4,
 	LSM_SUBJ_TYPE = 5,
@@ -141825,9 +141825,9 @@ enum policy_opt {
 	Opt_audit = 4,
 	Opt_hash___3 = 5,
 	Opt_dont_hash = 6,
-	Opt_obj_user = 7,
-	Opt_obj_role = 8,
-	Opt_obj_type = 9,
+	Opt_skel_user = 7,
+	Opt_skel_role = 8,
+	Opt_skel_type = 9,
 	Opt_subj_user = 10,
 	Opt_subj_role = 11,
 	Opt_subj_type = 12,
@@ -142336,7 +142336,7 @@ struct blk_crypto_keyslot {
 
 struct bd_holder_disk {
 	struct list_head list;
-	struct kobject *holder_dir;
+	struct kskelect *holder_dir;
 	int refcnt;
 };
 
@@ -143268,7 +143268,7 @@ struct acpi_s2idle_dev_ops {
 struct lpi_device_info {
 	char *name;
 	int enabled;
-	union acpi_object *package;
+	union acpi_skelect *package;
 };
 
 struct lpi_device_constraint {
@@ -143418,10 +143418,10 @@ typedef struct history_info HISTORY_INFO;
 
 struct acpi_integrity_info {
 	u32 nodes;
-	u32 objects;
+	u32 skelects;
 };
 
-struct acpi_object_info {
+struct acpi_skelect_info {
 	u32 types[28];
 };
 
@@ -144776,7 +144776,7 @@ struct irq_affinity_devres {
 	unsigned int irq[0];
 };
 
-struct platform_object {
+struct platform_skelect {
 	struct platform_device pdev;
 	char name[0];
 };
@@ -145522,7 +145522,7 @@ enum nvdimmsec_op_ids {
 };
 
 struct dma_resv_iter {
-	struct dma_resv *obj;
+	struct dma_resv *skel;
 	enum dma_resv_usage usage;
 	struct dma_fence *fence;
 	enum dma_resv_usage fence_usage;
@@ -146075,24 +146075,24 @@ struct drm_print_iterator {
 	ssize_t offset;
 };
 
-struct drm_syncobj_create {
+struct drm_syncskel_create {
 	__u32 handle;
 	__u32 flags;
 };
 
-struct drm_syncobj_destroy {
+struct drm_syncskel_destroy {
 	__u32 handle;
 	__u32 pad;
 };
 
-struct drm_syncobj_handle {
+struct drm_syncskel_handle {
 	__u32 handle;
 	__u32 flags;
 	__s32 fd;
 	__u32 pad;
 };
 
-struct drm_syncobj_transfer {
+struct drm_syncskel_transfer {
 	__u32 src_handle;
 	__u32 dst_handle;
 	__u64 src_point;
@@ -146101,7 +146101,7 @@ struct drm_syncobj_transfer {
 	__u32 pad;
 };
 
-struct drm_syncobj_wait {
+struct drm_syncskel_wait {
 	__u64 handles;
 	__s64 timeout_nsec;
 	__u32 count_handles;
@@ -146111,7 +146111,7 @@ struct drm_syncobj_wait {
 	__u64 deadline_nsec;
 };
 
-struct drm_syncobj_timeline_wait {
+struct drm_syncskel_timeline_wait {
 	__u64 handles;
 	__u64 points;
 	__s64 timeout_nsec;
@@ -146122,7 +146122,7 @@ struct drm_syncobj_timeline_wait {
 	__u64 deadline_nsec;
 };
 
-struct drm_syncobj_eventfd {
+struct drm_syncskel_eventfd {
 	__u32 handle;
 	__u32 flags;
 	__u64 point;
@@ -146130,20 +146130,20 @@ struct drm_syncobj_eventfd {
 	__u32 pad;
 };
 
-struct drm_syncobj_array {
+struct drm_syncskel_array {
 	__u64 handles;
 	__u32 count_handles;
 	__u32 pad;
 };
 
-struct drm_syncobj_timeline_array {
+struct drm_syncskel_timeline_array {
 	__u64 handles;
 	__u64 points;
 	__u32 count_handles;
 	__u32 flags;
 };
 
-struct drm_syncobj {
+struct drm_syncskel {
 	struct kref refcount;
 	struct dma_fence *fence;
 	struct list_head cb_list;
@@ -146152,7 +146152,7 @@ struct drm_syncobj {
 	struct file *file;
 };
 
-struct syncobj_wait_entry {
+struct syncskel_wait_entry {
 	struct list_head node;
 	struct task_struct *task;
 	struct dma_fence *fence;
@@ -146160,11 +146160,11 @@ struct syncobj_wait_entry {
 	u64 point;
 };
 
-struct syncobj_eventfd_entry {
+struct syncskel_eventfd_entry {
 	struct list_head node;
 	struct dma_fence *fence;
 	struct dma_fence_cb fence_cb;
-	struct drm_syncobj *syncobj;
+	struct drm_syncskel *syncskel;
 	struct eventfd_ctx *ev_fd_ctx;
 	u64 point;
 	u32 flags;
@@ -146907,8 +146907,8 @@ enum dm_uevent_type {
 
 struct dm_uevent {
 	struct mapped_device *md;
-	enum kobject_action action;
-	struct kobj_uevent_env ku_env;
+	enum kskelect_action action;
+	struct kskel_uevent_env ku_env;
 	struct list_head elist;
 	char name[128];
 	char uuid[129];
@@ -149253,7 +149253,7 @@ struct devlink_rel {
 	u32 devlink_index;
 	struct {
 		u32 devlink_index;
-		u32 obj_index;
+		u32 skel_index;
 		devlink_rel_notify_cb_t *notify_cb;
 		devlink_rel_cleanup_cb_t *cleanup_cb;
 		struct delayed_work notify_work;
@@ -149527,8 +149527,8 @@ enum switchdev_notifier_type {
 	SWITCHDEV_FDB_DEL_TO_DEVICE = 4,
 	SWITCHDEV_FDB_OFFLOADED = 5,
 	SWITCHDEV_FDB_FLUSH_TO_BRIDGE = 6,
-	SWITCHDEV_PORT_OBJ_ADD = 7,
-	SWITCHDEV_PORT_OBJ_DEL = 8,
+	SWITCHDEV_PORT_skel_ADD = 7,
+	SWITCHDEV_PORT_skel_DEL = 8,
 	SWITCHDEV_PORT_ATTR_SET = 9,
 	SWITCHDEV_VXLAN_FDB_ADD_TO_BRIDGE = 10,
 	SWITCHDEV_VXLAN_FDB_DEL_TO_BRIDGE = 11,
@@ -149556,9 +149556,9 @@ struct switchdev_notifier_fdb_info {
 	u8 offloaded: 1;
 };
 
-struct switchdev_notifier_port_obj_info {
+struct switchdev_notifier_port_skel_info {
 	struct switchdev_notifier_info info;
-	const struct switchdev_obj *obj;
+	const struct switchdev_skel *skel;
 	bool handled;
 };
 

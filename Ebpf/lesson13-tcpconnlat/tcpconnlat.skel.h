@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct tcpconnlat {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *start;
 		struct bpf_map *events;
@@ -32,7 +32,7 @@ struct tcpconnlat {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct tcpconnlat *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct tcpconnlat *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct tcpconnlat *open_and_load();
 	static inline int load(struct tcpconnlat *skel);
 	static inline int attach(struct tcpconnlat *skel);
@@ -43,41 +43,41 @@ struct tcpconnlat {
 };
 
 static void
-tcpconnlat__destroy(struct tcpconnlat *obj)
+tcpconnlat__destroy(struct tcpconnlat *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-tcpconnlat__create_skeleton(struct tcpconnlat *obj);
+tcpconnlat__create_skeleton(struct tcpconnlat *skel);
 
 static inline struct tcpconnlat *
-tcpconnlat__open_opts(const struct bpf_object_open_opts *opts)
+tcpconnlat__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct tcpconnlat *obj;
+	struct tcpconnlat *skel;
 	int err;
 
-	obj = (struct tcpconnlat *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct tcpconnlat *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = tcpconnlat__create_skeleton(obj);
+	err = tcpconnlat__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	tcpconnlat__destroy(obj);
+	tcpconnlat__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -89,50 +89,50 @@ tcpconnlat__open(void)
 }
 
 static inline int
-tcpconnlat__load(struct tcpconnlat *obj)
+tcpconnlat__load(struct tcpconnlat *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct tcpconnlat *
 tcpconnlat__open_and_load(void)
 {
-	struct tcpconnlat *obj;
+	struct tcpconnlat *skel;
 	int err;
 
-	obj = tcpconnlat__open();
-	if (!obj)
+	skel = tcpconnlat__open();
+	if (!skel)
 		return NULL;
-	err = tcpconnlat__load(obj);
+	err = tcpconnlat__load(skel);
 	if (err) {
-		tcpconnlat__destroy(obj);
+		tcpconnlat__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-tcpconnlat__attach(struct tcpconnlat *obj)
+tcpconnlat__attach(struct tcpconnlat *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-tcpconnlat__detach(struct tcpconnlat *obj)
+tcpconnlat__detach(struct tcpconnlat *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *tcpconnlat__elf_bytes(size_t *sz);
 
 static inline int
-tcpconnlat__create_skeleton(struct tcpconnlat *obj)
+tcpconnlat__create_skeleton(struct tcpconnlat *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -140,7 +140,7 @@ tcpconnlat__create_skeleton(struct tcpconnlat *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "tcpconnlat";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -152,14 +152,14 @@ tcpconnlat__create_skeleton(struct tcpconnlat *obj)
 	}
 
 	s->maps[0].name = "start";
-	s->maps[0].map = &obj->maps.start;
+	s->maps[0].map = &skel->maps.start;
 
 	s->maps[1].name = "events";
-	s->maps[1].map = &obj->maps.events;
+	s->maps[1].map = &skel->maps.events;
 
 	s->maps[2].name = "tcpconnl.rodata";
-	s->maps[2].map = &obj->maps.rodata;
-	s->maps[2].mmaped = (void **)&obj->rodata;
+	s->maps[2].map = &skel->maps.rodata;
+	s->maps[2].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 3;
@@ -171,23 +171,23 @@ tcpconnlat__create_skeleton(struct tcpconnlat *obj)
 	}
 
 	s->progs[0].name = "fentry_tcp_v4_connect";
-	s->progs[0].prog = &obj->progs.fentry_tcp_v4_connect;
-	s->progs[0].link = &obj->links.fentry_tcp_v4_connect;
+	s->progs[0].prog = &skel->progs.fentry_tcp_v4_connect;
+	s->progs[0].link = &skel->links.fentry_tcp_v4_connect;
 
 	s->progs[1].name = "fentry_tcp_v6_connect";
-	s->progs[1].prog = &obj->progs.fentry_tcp_v6_connect;
-	s->progs[1].link = &obj->links.fentry_tcp_v6_connect;
+	s->progs[1].prog = &skel->progs.fentry_tcp_v6_connect;
+	s->progs[1].link = &skel->links.fentry_tcp_v6_connect;
 
 	s->progs[2].name = "fentry_tcp_rcv_state_process";
-	s->progs[2].prog = &obj->progs.fentry_tcp_rcv_state_process;
-	s->progs[2].link = &obj->links.fentry_tcp_rcv_state_process;
+	s->progs[2].prog = &skel->progs.fentry_tcp_rcv_state_process;
+	s->progs[2].link = &skel->links.fentry_tcp_rcv_state_process;
 
 	s->data = tcpconnlat__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -36686,7 +36686,7 @@ static inline const void *tcpconnlat__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct tcpconnlat *tcpconnlat::open(const struct bpf_object_open_opts *opts) { return tcpconnlat__open_opts(opts); }
+struct tcpconnlat *tcpconnlat::open(const struct bpf_skelect_open_opts *opts) { return tcpconnlat__open_opts(opts); }
 struct tcpconnlat *tcpconnlat::open_and_load() { return tcpconnlat__open_and_load(); }
 int tcpconnlat::load(struct tcpconnlat *skel) { return tcpconnlat__load(skel); }
 int tcpconnlat::attach(struct tcpconnlat *skel) { return tcpconnlat__attach(skel); }

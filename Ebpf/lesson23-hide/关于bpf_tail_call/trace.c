@@ -72,12 +72,12 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
-    map_progs_fd = bpf_object__find_map_fd_by_name(skel->obj, "progs");
+    map_progs_fd = bpf_skelect__find_map_fd_by_name(skel->skel, "progs");
     prog_count = sizeof(progs) / sizeof(progs[0]);
     for (int i = 0; i < prog_count; i++) {
-		progs[i].prog = bpf_object__find_program_by_title(skel->obj, progs[i].name);
+		progs[i].prog = bpf_skelect__find_program_by_title(skel->skel, progs[i].name);
 		if (!progs[i].prog) {
-			fprintf(stderr, "Error: bpf_object__find_program_by_title failed\n");
+			fprintf(stderr, "Error: bpf_skelect__find_program_by_title failed\n");
 			return 1;
 		}
 		bpf_program__set_type(progs[i].prog, progs[i].type);

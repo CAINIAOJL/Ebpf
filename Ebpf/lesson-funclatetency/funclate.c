@@ -188,19 +188,19 @@ static const char *unit_str(void) {
     return "bad_uints";
 }
 
-static int attach_kprobe(struct funclate *obj) {
-    obj->links.dummy_kprobe = 
-        bpf_program__attach_kprobe(obj->progs.dummy_kprobe, false, env.funcname);
+static int attach_kprobe(struct funclate *skel) {
+    skel->links.dummy_kprobe = 
+        bpf_program__attach_kprobe(skel->progs.dummy_kprobe, false, env.funcname);
 
-        if(!obj->links.dummy_kprobe) {
+        if(!skel->links.dummy_kprobe) {
             warn("Failed to attach kprobe: %d\n", -errno);
             return -1;
         }
 
-        obj->links.dummy_kretprobe = 
-            bpf_program__attach_kprobe(obj->progs.dummy_kretprobe, true, env.funcname);
+        skel->links.dummy_kretprobe = 
+            bpf_program__attach_kprobe(skel->progs.dummy_kretprobe, true, env.funcname);
 
-            if(!obj->links.dummy_kretprobe) {
+            if(!skel->links.dummy_kretprobe) {
                 warn("Failed to attach kretprobe: %d\n", -errno);
                 return -1;
             }
@@ -208,7 +208,7 @@ static int attach_kprobe(struct funclate *obj) {
             return 0;
 }
 
-static int attach_uprobe(struct funclate *obj) {
+static int attach_uprobe(struct funclate *skel) {
     char *binary, *function;
     int ret = -1;
     long err;
@@ -235,14 +235,14 @@ static int attach_uprobe(struct funclate *obj) {
     opts.func_name = function;
     opts.retprobe = false;
 
-	//obj->links.dummy_kprobe =
-		//bpf_program__attach_uprobe_opts(obj->progs.dummy_kprobe, 
+	//skel->links.dummy_kprobe =
+		//bpf_program__attach_uprobe_opts(skel->progs.dummy_kprobe, 
 								   //env.pid ?: -1, binary, 0, &opts);
 
-    obj->links.dummy_kprobe = 
-        bpf_program__attach_uprobe_opts(obj->progs.dummy_kprobe, env.pid ?: -1, binary, 0, &opts);
+    skel->links.dummy_kprobe = 
+        bpf_program__attach_uprobe_opts(skel->progs.dummy_kprobe, env.pid ?: -1, binary, 0, &opts);
 
-    if(!obj->links.dummy_kprobe) {
+    if(!skel->links.dummy_kprobe) {
         err = -errno;
         warn("Failed to attach uprobe: %ld\n", err);
 		goto out_binary;
@@ -250,10 +250,10 @@ static int attach_uprobe(struct funclate *obj) {
 
     opts.retprobe = true;
 
-    obj->links.dummy_kretprobe = 
-        bpf_program__attach_uprobe_opts(obj->progs.dummy_kretprobe, env.pid ?: -1, binary, 0, &opts);
+    skel->links.dummy_kretprobe = 
+        bpf_program__attach_uprobe_opts(skel->progs.dummy_kretprobe, env.pid ?: -1, binary, 0, &opts);
     
-    if(!obj->links.dummy_kretprobe) {
+    if(!skel->links.dummy_kretprobe) {
         err = -errno;
         warn("Failed to attach uprobe: %ld\n", err);
         goto out_binary;
@@ -335,7 +335,7 @@ void print_log2_hist(unsigned int *vals, int vals_size, const char *val_type) {
 }
 
 int main(int argc, char **argv) {
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
     static const struct argp argp = {
         .options = opts,
         .parser = parse_arg,
@@ -343,7 +343,7 @@ int main(int argc, char **argv) {
         .doc = program_doc,
     };
 
-    struct funclate *obj;
+    struct funclate *skel;
     int i, err;
     struct tm *tm;
     char ts[32];
@@ -361,36 +361,36 @@ int main(int argc, char **argv) {
 
     libbpf_set_print(libbpf_print_fn);
 
-    obj = funclate__open_opts(&open_opts);
-    if(!obj) {
-        warn("Failed to open BPF object\n");
+    skel = funclate__open_opts(&open_opts);
+    if(!skel) {
+        warn("Failed to open BPF skelect\n");
         return 1;
     }
 
-    obj->rodata->units = env.unist;
-    obj->rodata->target_tgid = env.pid;
+    skel->rodata->units = env.unist;
+    skel->rodata->target_tgid = env.pid;
 
-    err = funclate__load(obj);
+    err = funclate__load(skel);
     if(err) {
-        warn("Failed to load BPF object: %d\n", err);
+        warn("Failed to load BPF skelect: %d\n", err);
         return 1;
     }
 
-    if(!obj->bss) {
+    if(!skel->bss) {
 		warn("Memory-mapping BPF maps is supported starting from Linux 5.7, please upgrade.\n");
 		goto cleanup;
     }
 
     if(env.is_kernel_func) {
-        err = attach_kprobe(obj);
+        err = attach_kprobe(skel);
     } else {
-        err = attach_uprobe(obj);
+        err = attach_uprobe(skel);
     }
     if(err) {
         goto cleanup;
     }
 
-    err = funclate__attach(obj);
+    err = funclate__attach(skel);
     if(err) {
         fprintf(stderr, "Failed to attach BPF programs: %s\n", strerror(-err));
         goto cleanup;
@@ -410,15 +410,15 @@ int main(int argc, char **argv) {
             printf("%-8s\n", ts);
         }
 
-        print_log2_hist(obj->bss->hist, MAX_SLOTS, unit_str());
+        print_log2_hist(skel->bss->hist, MAX_SLOTS, unit_str());
 
-        memset(obj->bss->hist, 0, sizeof(obj->bss->hist));
+        memset(skel->bss->hist, 0, sizeof(skel->bss->hist));
     }
 
     printf("Exiting trace of %s\n", env.funcname);
 
 cleanup:
-    funclate__destroy(obj);
+    funclate__destroy(skel);
     if(cgfd > 0) {
         close(cgfd);
     }
@@ -624,21 +624,21 @@ static const char *unit_str(void)
 	return "bad units";
 }
 
-static int attach_kprobes(struct funclatency_bpf *obj)
+static int attach_kprobes(struct funclatency_bpf *skel)
 {
-	obj->links.dummy_kprobe =
-		bpf_program__attach_kprobe(obj->progs.dummy_kprobe, false,
+	skel->links.dummy_kprobe =
+		bpf_program__attach_kprobe(skel->progs.dummy_kprobe, false,
 								   env.funcname);
-	if (!obj->links.dummy_kprobe)
+	if (!skel->links.dummy_kprobe)
 	{
 		warn("failed to attach kprobe: %d\n", -errno);
 		return -1;
 	}
 
-	obj->links.dummy_kretprobe =
-		bpf_program__attach_kprobe(obj->progs.dummy_kretprobe, true,
+	skel->links.dummy_kretprobe =
+		bpf_program__attach_kprobe(skel->progs.dummy_kretprobe, true,
 								   env.funcname);
-	if (!obj->links.dummy_kretprobe)
+	if (!skel->links.dummy_kretprobe)
 	{
 		warn("failed to attach kretprobe: %d\n", -errno);
 		return -1;
@@ -647,7 +647,7 @@ static int attach_kprobes(struct funclatency_bpf *obj)
 	return 0;
 }
 
-static int attach_uprobes(struct funclatency_bpf *obj)
+static int attach_uprobes(struct funclatency_bpf *skel)
 {
 	char *binary, *function;
 	int ret = -1;
@@ -674,10 +674,10 @@ static int attach_uprobes(struct funclatency_bpf *obj)
 	opts.func_name = function;
 	opts.retprobe = false;
 
-	obj->links.dummy_kprobe =
-		bpf_program__attach_uprobe_opts(obj->progs.dummy_kprobe, 
+	skel->links.dummy_kprobe =
+		bpf_program__attach_uprobe_opts(skel->progs.dummy_kprobe, 
 								   env.pid ?: -1, binary, 0, &opts);
-	if (!obj->links.dummy_kprobe)
+	if (!skel->links.dummy_kprobe)
 	{
 		err = -errno;
 		warn("Failed to attach uprobe: %ld\n", err);
@@ -686,10 +686,10 @@ static int attach_uprobes(struct funclatency_bpf *obj)
 
 	opts.retprobe = true;
 
-	obj->links.dummy_kretprobe =
-		bpf_program__attach_uprobe_opts(obj->progs.dummy_kretprobe, 
+	skel->links.dummy_kretprobe =
+		bpf_program__attach_uprobe_opts(skel->progs.dummy_kretprobe, 
 								   env.pid ?: -1, binary, 0, &opts);
-	if (!obj->links.dummy_kretprobe)
+	if (!skel->links.dummy_kretprobe)
 	{
 		err = -errno;
 		warn("Failed to attach uretprobe: %ld\n", err);
@@ -777,14 +777,14 @@ void print_log2_hist(unsigned int *vals, int vals_size, const char *val_type)
 
 int main(int argc, char **argv)
 {
-	LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+	LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
 	static const struct argp argp = {
 		.options = opts,
 		.parser = parse_arg,
 		.args_doc = args_doc,
 		.doc = program_doc,
 	};
-	struct funclatency_bpf *obj;
+	struct funclatency_bpf *skel;
 	int i, err;
 	struct tm *tm;
 	char ts[32];
@@ -801,37 +801,37 @@ int main(int argc, char **argv)
 
 	libbpf_set_print(libbpf_print_fn);
 
-	obj = funclatency_bpf__open_opts(&open_opts);
-	if (!obj)
+	skel = funclatency_bpf__open_opts(&open_opts);
+	if (!skel)
 	{
-		warn("failed to open BPF object\n");
+		warn("failed to open BPF skelect\n");
 		return 1;
 	}
 
-	obj->rodata->units = env.units;
-	obj->rodata->targ_tgid = env.pid;
+	skel->rodata->units = env.units;
+	skel->rodata->targ_tgid = env.pid;
 
-	err = funclatency_bpf__load(obj);
+	err = funclatency_bpf__load(skel);
 	if (err)
 	{
-		warn("failed to load BPF object\n");
+		warn("failed to load BPF skelect\n");
 		return 1;
 	}
 
-	if (!obj->bss)
+	if (!skel->bss)
 	{
 		warn("Memory-mapping BPF maps is supported starting from Linux 5.7, please upgrade.\n");
 		goto cleanup;
 	}
 
 	if (env.is_kernel_func)
-		err = attach_kprobes(obj);
+		err = attach_kprobes(skel);
 	else
-		err = attach_uprobes(obj);
+		err = attach_uprobes(skel);
 	if (err)
 		goto cleanup;
 
-	err = funclatency_bpf__attach(obj);
+	err = funclatency_bpf__attach(skel);
 	if (err)
 	{
 		fprintf(stderr, "failed to attach BPF programs: %s\n",
@@ -854,16 +854,16 @@ int main(int argc, char **argv)
 			printf("%-8s\n", ts);
 		}
 
-		print_log2_hist(obj->bss->hist, MAX_SLOTS, unit_str());
+		print_log2_hist(skel->bss->hist, MAX_SLOTS, unit_str());
 
 		/* Cleanup histograms for interval output */
-		/*memset(obj->bss->hist, 0, sizeof(obj->bss->hist));
+		/*memset(skel->bss->hist, 0, sizeof(skel->bss->hist));
 	}
 
 	printf("Exiting trace of %s\n", env.funcname);
 
 cleanup:
-	funclatency_bpf__destroy(obj);
+	funclatency_bpf__destroy(skel);
 	if (cgfd > 0)
 		close(cgfd);
 

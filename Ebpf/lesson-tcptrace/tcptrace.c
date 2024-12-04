@@ -13,7 +13,8 @@
 #include <arpa/inet.h>
 #include "tcptrace.h"
 #include "tcptrace.skel.h"
-
+#include <netinet/in.h>
+#include <sys/socket.h>
 #define INVALID_PID -1
 #define warn(...) fprintf(stderr, __VA_ARGS__)
 
@@ -52,7 +53,7 @@ static const struct argp_option opts[] = {
     {"ipv4", '4', "IPV4", 0, "show IPv4 connections only"},
     {"verbose", 'v', NULL, 0, "verbose debug output"},
     {"ipv6", '6', "IPV6", 0, "show IPv6 connections only"},
-    {"pid", 'p', "PID", 0, "trace this PID only"}
+    {"pid", 'p', "PID", 0, "trace this PID only"},
     {},
 };
 
@@ -151,9 +152,9 @@ static void print_ipv4_event(void *ctx, void *data, size_t data_sz) {
             start_ns = event->ts_ns;
         }
         if(env.verbose) {
-            printf("%-14ld", event.ts_ns - start_ns);
+            printf("%-14ld", event->ts_ns - start_ns);
         } else {
-            printf("%-9.3f", ((event.ts_ns - start_ns) / 1000000000.0));
+            printf("%-9.3f", ((event->ts_ns - start_ns) / 1000000000.0));
         }
     }
     char *type_str;
@@ -173,7 +174,7 @@ static void print_ipv4_event(void *ctx, void *data, size_t data_sz) {
         printf("%-2s ", type_str);
     }
 
-    print("%-6d %-16s %-2d %-16s %-16s %-6d %-6d", 
+    printf("%-6d %-16s %-2d %-16s %-16s %-6d %-6d", 
         event->pid, 
         event->comm, 
         event->ip, 
@@ -199,9 +200,9 @@ static void print_ipv6_event(void *ctx, void *data, size_t data_sz) {
             start_ns = event->ts_ns;
         }
         if(env.verbose) {
-            printf("%-14ld", event.ts_ns - start_ns);
+            printf("%-14ld", event->ts_ns - start_ns);
         } else {
-            printf("%-9.3f", ((event.ts_ns - start_ns) / 1000000000.0));
+            printf("%-9.3f", ((event->ts_ns - start_ns) / 1000000000.0));
         }
     }
     char *type_str;
@@ -220,13 +221,15 @@ static void print_ipv6_event(void *ctx, void *data, size_t data_sz) {
     } else {
         printf("%-2s ", type_str);
     }
+    const char *src_str = inet_ntop(AF_INET6, &event->saddr, src, INET6_ADDRSTRLEN);
+    const char *dst_str = inet_ntop(AF_INET6, &event->daddr, dst, INET6_ADDRSTRLEN);
 
-    print("%-6d %-16s %-2d %-16s %-16s %-6d %-6d", 
+    printf("%-6d %-16s %-2d %-16s %-16s %-6d %-6d", 
         event->pid, 
         event->comm, 
         event->ip, 
-        "[" + inet_ntop(AF_INET6, &event->saddr, src, INET_ADDRSTRLEN) + "]",
-        "[" + inet_ntop(AF_INET6, &event->daddr, dst, INET_ADDRSTRLEN) + "]",
+        src_str,
+        dst_str,
         event->sport,
         event->dport);
 
@@ -240,9 +243,9 @@ static void print_ipv6_event(void *ctx, void *data, size_t data_sz) {
 int main(int argc, char** argv) {
     struct ring_buffer *rb_4 = NULL;
     struct ring_buffer *rb_6 = NULL;
-    struct tcptrace_skel *skel;
+    struct tcptrace *skel;
     int err;
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    //LIBBPF_OPTS(bpf_object_open_opts, open_opts);
     static const struct argp argp = {
         .args_doc = argp_program_doc,
         .options = opts,
@@ -262,101 +265,101 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    err = tcptrace_skel__open(skel);
-    if(err) {
-        fprintf(stderr, "Failed to open BPF object: %s\n", strerror(-err));
+    skel = tcptrace__open();
+    if(!skel) {
+        fprintf(stderr, "Failed to open BPF skelect: %s\n", strerror(-err));
         return 1;
     }
 
-    err = tcptrace_skel__load(skel);
+    err = tcptrace__load(skel);
     if(err) {
-        fprintf(stderr, "Failed to load BPF object: %s\n", strerror(-err));
+        fprintf(stderr, "Failed to load BPF skelect: %s\n", strerror(-err));
         goto cleanup;
     }
     //内核函数
     if(env.ipv4) {
-        obj->links.kprobe_tcp_v4_connect_entry = 
-        bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v4_connect_entry, false, "tcp_v4_connect");
+        skel->links.kprobe_tcp_v4_connect_entry = 
+        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v4_connect_entry, false, "tcp_v4_connect");
 
-        if(!obj->links.kprobe_tcp_v4_connect_entry) {
+        if(!skel->links.kprobe_tcp_v4_connect_entry) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v4_connect_entry", -errno);
             return -1;
         }
 
-        obj->links.krpobe_tcp_v4_connect_return = 
-            bpf_program__attach_kprobe(obj->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
+        skel->links.krpobe_tcp_v4_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
 
-        if(!obj->links.krpobe_tcp_v4_connect_return) {
+        if(!skel->links.krpobe_tcp_v4_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "krpobe_tcp_v4_connect_return", -errno);
             return -1;
         }
     } else if(env.ipv6) {
-        obj->links.kprobe_tcp_v6_connect_entry = 
-        bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v6_connect_entry, false, "tcp_v6_connect");
+        skel->links.kprobe_tcp_v6_connect_entry = 
+        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v6_connect_entry, false, "tcp_v6_connect");
 
-        if(!obj->links.kprobe_tcp_v6_connect_entry) {
+        if(!skel->links.kprobe_tcp_v6_connect_entry) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v6_connect_entry", -errno);
             return -1;
         }
 
-        obj->links.kprobe_tcp_v6_connect_return = 
-            bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v6_connect_return, true, "tcp_v6_connect");
+        skel->links.kprobe_tcp_v6_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v6_connect_return, true, "tcp_v6_connect");
 
-        if(!obj->links.kprobe_tcp_v6_connect_return) {
+        if(!skel->links.kprobe_tcp_v6_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v6_connect_return", -errno);
             return -1;
         }
     } else {
-        obj->links.kprobe_tcp_v4_connect_entry = 
-        bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v4_connect_entry, false, "tcp_v4_connect");
+        skel->links.kprobe_tcp_v4_connect_entry = 
+        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v4_connect_entry, false, "tcp_v4_connect");
 
-        if(!obj->links.kprobe_tcp_v4_connect_entry) {
+        if(!skel->links.kprobe_tcp_v4_connect_entry) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v4_connect_entry", -errno);
             return -1;
         }
 
-        obj->links.krpobe_tcp_v4_connect_return = 
-            bpf_program__attach_kprobe(obj->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
+        skel->links.krpobe_tcp_v4_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.krpobe_tcp_v4_connect_return, true, "tcp_v4_connect");
 
-        if(!obj->links.krpobe_tcp_v4_connect_return) {
+        if(!skel->links.krpobe_tcp_v4_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "krpobe_tcp_v4_connect_return", -errno);
             return -1;
         }
 
-        obj->links.kprobe_tcp_v6_connect_entry = 
-        bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v6_connect_entry, false, "tcp_v6_connect");
+        skel->links.kprobe_tcp_v6_connect_entry = 
+        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v6_connect_entry, false, "tcp_v6_connect");
 
-        if(!obj->links.kprobe_tcp_v6_connect_entry) {
+        if(!skel->links.kprobe_tcp_v6_connect_entry) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v6_connect_entry", -errno);
             return -1;
         }
 
-        obj->links.kprobe_tcp_v6_connect_return = 
-            bpf_program__attach_kprobe(obj->progs.kprobe_tcp_v6_connect_return, true, "tcp_v6_connect");
+        skel->links.kprobe_tcp_v6_connect_return = 
+            bpf_program__attach_kprobe(skel->progs.kprobe_tcp_v6_connect_return, true, "tcp_v6_connect");
 
-        if(!obj->links.kprobe_tcp_v6_connect_return) {
+        if(!skel->links.kprobe_tcp_v6_connect_return) {
             warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_v6_connect_return", -errno);
             return -1;
         }
     }
 
-    obj->links.kprobe_tcp_set_state_entry = 
-        bpf_program__attach_kprobe(obj->progs.kprobe_tcp_set_state_entry, false, "tcp_set_state");
-    if(!obj->links.kprobe_tcp_set_state_entry) {    
+    skel->links.kprobe_tcp_set_state_entry = 
+        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_set_state_entry, false, "tcp_set_state");
+    if(!skel->links.kprobe_tcp_set_state_entry) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_set_state_entry", -errno);
         return -1;
     }
 
-    obj->links.kprobe_tcp_close_entry = 
-    bpf_program__attach_kprobe(obj->progs.kprobe_tcp_close_entry, false, "tcp_close");
-    if(!obj->links.kprobe_tcp_close_entry) {    
+    skel->links.kprobe_tcp_close_entry = 
+    bpf_program__attach_kprobe(skel->progs.kprobe_tcp_close_entry, false, "tcp_close");
+    if(!skel->links.kprobe_tcp_close_entry) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_close_entry", -errno);
         return -1;
     }
 
-    obj->links.kprobe_inet_csk_accept_return = 
-    bpf_program__attach_kprobe(obj->progs.kprobe_inet_csk_accept_return, true, "inet_csk_accept");
-    if(!obj->links.kprobe_inet_csk_accept_return) {    
+    skel->links.kprobe_inet_csk_accept_return = 
+    bpf_program__attach_kprobe(skel->progs.kprobe_inet_csk_accept_return, true, "inet_csk_accept");
+    if(!skel->links.kprobe_inet_csk_accept_return) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_inet_csk_accept_return", -errno);
         return -1;
     }
@@ -369,7 +372,7 @@ int main(int argc, char** argv) {
         goto cleanup;
     }
 
-    err = tcptrace_skel__attach(skel);
+    err = tcptrace__attach(skel);
     if(err) {
         fprintf(stderr, "Failed to attach BPF programs: %s\n", strerror(-err));
         goto cleanup;
@@ -392,7 +395,7 @@ int main(int argc, char** argv) {
     }
 
 cleanup:
-    tcptrace_skel__destroy(skel);
+    tcptrace__destroy(skel);
     ring_buffer__free(rb_4);
     ring_buffer__free(rb_6);
 

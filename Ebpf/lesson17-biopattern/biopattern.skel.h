@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct biopattern {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *counters;
 		struct bpf_map *rodata;
@@ -27,7 +27,7 @@ struct biopattern {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct biopattern *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct biopattern *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct biopattern *open_and_load();
 	static inline int load(struct biopattern *skel);
 	static inline int attach(struct biopattern *skel);
@@ -38,41 +38,41 @@ struct biopattern {
 };
 
 static void
-biopattern__destroy(struct biopattern *obj)
+biopattern__destroy(struct biopattern *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-biopattern__create_skeleton(struct biopattern *obj);
+biopattern__create_skeleton(struct biopattern *skel);
 
 static inline struct biopattern *
-biopattern__open_opts(const struct bpf_object_open_opts *opts)
+biopattern__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct biopattern *obj;
+	struct biopattern *skel;
 	int err;
 
-	obj = (struct biopattern *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct biopattern *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = biopattern__create_skeleton(obj);
+	err = biopattern__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	biopattern__destroy(obj);
+	biopattern__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -84,50 +84,50 @@ biopattern__open(void)
 }
 
 static inline int
-biopattern__load(struct biopattern *obj)
+biopattern__load(struct biopattern *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct biopattern *
 biopattern__open_and_load(void)
 {
-	struct biopattern *obj;
+	struct biopattern *skel;
 	int err;
 
-	obj = biopattern__open();
-	if (!obj)
+	skel = biopattern__open();
+	if (!skel)
 		return NULL;
-	err = biopattern__load(obj);
+	err = biopattern__load(skel);
 	if (err) {
-		biopattern__destroy(obj);
+		biopattern__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-biopattern__attach(struct biopattern *obj)
+biopattern__attach(struct biopattern *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-biopattern__detach(struct biopattern *obj)
+biopattern__detach(struct biopattern *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *biopattern__elf_bytes(size_t *sz);
 
 static inline int
-biopattern__create_skeleton(struct biopattern *obj)
+biopattern__create_skeleton(struct biopattern *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -135,7 +135,7 @@ biopattern__create_skeleton(struct biopattern *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "biopattern";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 2;
@@ -147,11 +147,11 @@ biopattern__create_skeleton(struct biopattern *obj)
 	}
 
 	s->maps[0].name = "counters";
-	s->maps[0].map = &obj->maps.counters;
+	s->maps[0].map = &skel->maps.counters;
 
 	s->maps[1].name = "biopatte.rodata";
-	s->maps[1].map = &obj->maps.rodata;
-	s->maps[1].mmaped = (void **)&obj->rodata;
+	s->maps[1].map = &skel->maps.rodata;
+	s->maps[1].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -163,15 +163,15 @@ biopattern__create_skeleton(struct biopattern *obj)
 	}
 
 	s->progs[0].name = "handle__block_rq_complete";
-	s->progs[0].prog = &obj->progs.handle__block_rq_complete;
-	s->progs[0].link = &obj->links.handle__block_rq_complete;
+	s->progs[0].prog = &skel->progs.handle__block_rq_complete;
+	s->progs[0].link = &skel->links.handle__block_rq_complete;
 
 	s->data = biopattern__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -624,7 +624,7 @@ static inline const void *biopattern__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct biopattern *biopattern::open(const struct bpf_object_open_opts *opts) { return biopattern__open_opts(opts); }
+struct biopattern *biopattern::open(const struct bpf_skelect_open_opts *opts) { return biopattern__open_opts(opts); }
 struct biopattern *biopattern::open_and_load() { return biopattern__open_and_load(); }
 int biopattern::load(struct biopattern *skel) { return biopattern__load(skel); }
 int biopattern::attach(struct biopattern *skel) { return biopattern__attach(skel); }

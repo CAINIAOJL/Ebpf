@@ -5,10 +5,16 @@
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
+#include <bpf/bpf_endian.h>
 
-#include <sys/socket.h>
-#include <string.h>
-#include <linux/net.h>
+//#include <sys/socket.h>
+//#include <sys/socket.h>
+
+
+#define AF_INET 2
+#define AF_INET6 10
+
+char _license[] SEC("license") = "Dual BSD/GPL";
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -212,14 +218,14 @@ int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
             return 0;
         }
         ipv4_event->pid = p->pid >> 32;
-        memcpy(ipv4_event->comm, p->comm, sizeof(ipv4_event->comm));
+        for (int i = 0; i < TASK_COMM_LEN; i++) {
+            ipv4_event->comm[i] = p->comm[i];
+        }
         ipv4_event->ts_ns = bpf_ktime_get_ns(); //时间戳
         ipv4_event->saddr = tuple.saddr;
         ipv4_event->daddr = tuple.daddr;
-        //ipv4_event.sport = tuple.sport;
-        //ipv4_event.dport = tuple.dport;
-        ipv4_event->sport = ntohs(tuple.sport);
-        ipv4_event->dport = ntohs(tuple.dport);
+        ipv4_event->sport = bpf_ntohs(tuple.sport);
+        ipv4_event->dport = bpf_ntohs(tuple.dport);
         ipv4_event->netns = tuple.netns;
         ipv4_event->ip = ipver;
         ipv4_event->type = TCP_EVENT_TYPE_CONNECT;
@@ -249,12 +255,14 @@ int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
         if(!ipv6_event) {
             return 0;
         }
-        memcpy(ipv6_event->comm, p->comm, sizeof(ipv6_event->comm));
+        for(int i = 0; i < TASK_COMM_LEN; i++) {
+            ipv6_event->comm[i] = p->comm[i];
+        }
         ipv6_event->ts_ns = bpf_ktime_get_ns(); //时间戳
         ipv6_event->saddr = tuple.saddr;
         ipv6_event->daddr = tuple.daddr;
-        ipv6_event->sport = ntohs(tuple.sport);
-        ipv6_event->dport = ntohs(tuple.dport);
+        ipv6_event->sport = bpf_ntohs(tuple.sport);
+        ipv6_event->dport = bpf_ntohs(tuple.dport);
         ipv6_event->netns = tuple.netns;
         ipv6_event->ip = ipver;
         ipv6_event->type = TCP_EVENT_TYPE_CONNECT;
@@ -296,8 +304,8 @@ int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
         ipv4_event->ts_ns = bpf_ktime_get_ns(); //时间戳
         ipv4_event->saddr = tuple.saddr;
         ipv4_event->daddr = tuple.daddr;
-        ipv4_event->sport = ntohs(tuple.sport);
-        ipv4_event->dport = ntohs(tuple.dport);
+        ipv4_event->sport = bpf_ntohs(tuple.sport);
+        ipv4_event->dport = bpf_ntohs(tuple.dport);
         ipv4_event->netns = tuple.netns;
         ipv4_event->ip = ipver;
         ipv4_event->type = TCP_EVENT_TYPE_CLOSE;
@@ -320,8 +328,8 @@ int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
             ipv6_event->ts_ns = bpf_ktime_get_ns(); //时间戳
             ipv6_event->saddr = tuple.saddr;
             ipv6_event->daddr = tuple.daddr;
-            ipv6_event->sport = ntohs(tuple.sport);
-            ipv6_event->dport = ntohs(tuple.dport);
+            ipv6_event->sport = bpf_ntohs(tuple.sport);
+            ipv6_event->dport = bpf_ntohs(tuple.dport);
             ipv6_event->netns = tuple.netns;
             ipv6_event->ip = ipver;
             ipv6_event->type = TCP_EVENT_TYPE_CLOSE;
@@ -369,7 +377,7 @@ int trace_accept_return(struct pt_regs *ctx) {
         ipv4_event->daddr = newsock->__sk_common.skc_daddr;
 
         ipv4_event->sport = lport;
-        ipv4_event->daddr = ntohs(dport);
+        ipv4_event->daddr = bpf_ntohs(dport);
 
         bpf_get_current_comm(&ipv4_event->comm, sizeof(ipv4_event->comm));
 
@@ -395,7 +403,7 @@ int trace_accept_return(struct pt_regs *ctx) {
             bpf_probe_read_kernel(&ipv6_event->daddr, sizeof(ipv6_event->daddr), newsock->__sk_common.skc_v6_daddr.in6_u.u6_addr32);
 
             ipv6_event->sport = lport;
-            ipv6_event->daddr = ntohs(dport);
+            ipv6_event->daddr = bpf_ntohs(dport);
 
             bpf_get_current_comm(&ipv6_event->comm, sizeof(ipv6_event->comm));
 

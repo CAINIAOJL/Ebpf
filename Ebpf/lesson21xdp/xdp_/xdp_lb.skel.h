@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct xdp_lb {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *backends;
 		struct bpf_map *data;
@@ -30,7 +30,7 @@ struct xdp_lb {
 	} *data;
 
 #ifdef __cplusplus
-	static inline struct xdp_lb *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct xdp_lb *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct xdp_lb *open_and_load();
 	static inline int load(struct xdp_lb *skel);
 	static inline int attach(struct xdp_lb *skel);
@@ -41,41 +41,41 @@ struct xdp_lb {
 };
 
 static void
-xdp_lb__destroy(struct xdp_lb *obj)
+xdp_lb__destroy(struct xdp_lb *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-xdp_lb__create_skeleton(struct xdp_lb *obj);
+xdp_lb__create_skeleton(struct xdp_lb *skel);
 
 static inline struct xdp_lb *
-xdp_lb__open_opts(const struct bpf_object_open_opts *opts)
+xdp_lb__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct xdp_lb *obj;
+	struct xdp_lb *skel;
 	int err;
 
-	obj = (struct xdp_lb *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct xdp_lb *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = xdp_lb__create_skeleton(obj);
+	err = xdp_lb__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	xdp_lb__destroy(obj);
+	xdp_lb__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -87,50 +87,50 @@ xdp_lb__open(void)
 }
 
 static inline int
-xdp_lb__load(struct xdp_lb *obj)
+xdp_lb__load(struct xdp_lb *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct xdp_lb *
 xdp_lb__open_and_load(void)
 {
-	struct xdp_lb *obj;
+	struct xdp_lb *skel;
 	int err;
 
-	obj = xdp_lb__open();
-	if (!obj)
+	skel = xdp_lb__open();
+	if (!skel)
 		return NULL;
-	err = xdp_lb__load(obj);
+	err = xdp_lb__load(skel);
 	if (err) {
-		xdp_lb__destroy(obj);
+		xdp_lb__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-xdp_lb__attach(struct xdp_lb *obj)
+xdp_lb__attach(struct xdp_lb *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-xdp_lb__detach(struct xdp_lb *obj)
+xdp_lb__detach(struct xdp_lb *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *xdp_lb__elf_bytes(size_t *sz);
 
 static inline int
-xdp_lb__create_skeleton(struct xdp_lb *obj)
+xdp_lb__create_skeleton(struct xdp_lb *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -138,7 +138,7 @@ xdp_lb__create_skeleton(struct xdp_lb *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "xdp_lb";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -150,14 +150,14 @@ xdp_lb__create_skeleton(struct xdp_lb *obj)
 	}
 
 	s->maps[0].name = "backends";
-	s->maps[0].map = &obj->maps.backends;
+	s->maps[0].map = &skel->maps.backends;
 
 	s->maps[1].name = "xdp_lb.data";
-	s->maps[1].map = &obj->maps.data;
-	s->maps[1].mmaped = (void **)&obj->data;
+	s->maps[1].map = &skel->maps.data;
+	s->maps[1].mmaped = (void **)&skel->data;
 
 	s->maps[2].name = "xdp_lb.rodata";
-	s->maps[2].map = &obj->maps.rodata;
+	s->maps[2].map = &skel->maps.rodata;
 
 	/* programs */
 	s->prog_cnt = 1;
@@ -169,15 +169,15 @@ xdp_lb__create_skeleton(struct xdp_lb *obj)
 	}
 
 	s->progs[0].name = "xdp_load_balancer";
-	s->progs[0].prog = &obj->progs.xdp_load_balancer;
-	s->progs[0].link = &obj->links.xdp_load_balancer;
+	s->progs[0].prog = &skel->progs.xdp_load_balancer;
+	s->progs[0].link = &skel->links.xdp_load_balancer;
 
 	s->data = xdp_lb__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -1279,7 +1279,7 @@ static inline const void *xdp_lb__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct xdp_lb *xdp_lb::open(const struct bpf_object_open_opts *opts) { return xdp_lb__open_opts(opts); }
+struct xdp_lb *xdp_lb::open(const struct bpf_skelect_open_opts *opts) { return xdp_lb__open_opts(opts); }
 struct xdp_lb *xdp_lb::open_and_load() { return xdp_lb__open_and_load(); }
 int xdp_lb::load(struct xdp_lb *skel) { return xdp_lb__load(skel); }
 int xdp_lb::attach(struct xdp_lb *skel) { return xdp_lb__attach(skel); }

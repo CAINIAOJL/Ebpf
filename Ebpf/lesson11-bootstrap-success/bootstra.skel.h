@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct bootstrap_bpf {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *exec_start;
 		struct bpf_map *rb;
@@ -29,7 +29,7 @@ struct bootstrap_bpf {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct bootstrap_bpf *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct bootstrap_bpf *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct bootstrap_bpf *open_and_load();
 	static inline int load(struct bootstrap_bpf *skel);
 	static inline int attach(struct bootstrap_bpf *skel);
@@ -40,41 +40,41 @@ struct bootstrap_bpf {
 };
 
 static void
-bootstrap_bpf__destroy(struct bootstrap_bpf *obj)
+bootstrap_bpf__destroy(struct bootstrap_bpf *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-bootstrap_bpf__create_skeleton(struct bootstrap_bpf *obj);
+bootstrap_bpf__create_skeleton(struct bootstrap_bpf *skel);
 
 static inline struct bootstrap_bpf *
-bootstrap_bpf__open_opts(const struct bpf_object_open_opts *opts)
+bootstrap_bpf__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct bootstrap_bpf *obj;
+	struct bootstrap_bpf *skel;
 	int err;
 
-	obj = (struct bootstrap_bpf *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct bootstrap_bpf *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = bootstrap_bpf__create_skeleton(obj);
+	err = bootstrap_bpf__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	bootstrap_bpf__destroy(obj);
+	bootstrap_bpf__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -86,50 +86,50 @@ bootstrap_bpf__open(void)
 }
 
 static inline int
-bootstrap_bpf__load(struct bootstrap_bpf *obj)
+bootstrap_bpf__load(struct bootstrap_bpf *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct bootstrap_bpf *
 bootstrap_bpf__open_and_load(void)
 {
-	struct bootstrap_bpf *obj;
+	struct bootstrap_bpf *skel;
 	int err;
 
-	obj = bootstrap_bpf__open();
-	if (!obj)
+	skel = bootstrap_bpf__open();
+	if (!skel)
 		return NULL;
-	err = bootstrap_bpf__load(obj);
+	err = bootstrap_bpf__load(skel);
 	if (err) {
-		bootstrap_bpf__destroy(obj);
+		bootstrap_bpf__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-bootstrap_bpf__attach(struct bootstrap_bpf *obj)
+bootstrap_bpf__attach(struct bootstrap_bpf *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-bootstrap_bpf__detach(struct bootstrap_bpf *obj)
+bootstrap_bpf__detach(struct bootstrap_bpf *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *bootstrap_bpf__elf_bytes(size_t *sz);
 
 static inline int
-bootstrap_bpf__create_skeleton(struct bootstrap_bpf *obj)
+bootstrap_bpf__create_skeleton(struct bootstrap_bpf *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -137,7 +137,7 @@ bootstrap_bpf__create_skeleton(struct bootstrap_bpf *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "bootstrap_bpf";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -149,14 +149,14 @@ bootstrap_bpf__create_skeleton(struct bootstrap_bpf *obj)
 	}
 
 	s->maps[0].name = "exec_start";
-	s->maps[0].map = &obj->maps.exec_start;
+	s->maps[0].map = &skel->maps.exec_start;
 
 	s->maps[1].name = "rb";
-	s->maps[1].map = &obj->maps.rb;
+	s->maps[1].map = &skel->maps.rb;
 
 	s->maps[2].name = "bootstra.rodata";
-	s->maps[2].map = &obj->maps.rodata;
-	s->maps[2].mmaped = (void **)&obj->rodata;
+	s->maps[2].map = &skel->maps.rodata;
+	s->maps[2].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 2;
@@ -168,19 +168,19 @@ bootstrap_bpf__create_skeleton(struct bootstrap_bpf *obj)
 	}
 
 	s->progs[0].name = "handle_exec";
-	s->progs[0].prog = &obj->progs.handle_exec;
-	s->progs[0].link = &obj->links.handle_exec;
+	s->progs[0].prog = &skel->progs.handle_exec;
+	s->progs[0].link = &skel->links.handle_exec;
 
 	s->progs[1].name = "handle_exit";
-	s->progs[1].prog = &obj->progs.handle_exit;
-	s->progs[1].link = &obj->links.handle_exit;
+	s->progs[1].prog = &skel->progs.handle_exit;
+	s->progs[1].link = &skel->links.handle_exit;
 
 	s->data = bootstrap_bpf__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -36392,7 +36392,7 @@ static inline const void *bootstrap_bpf__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct bootstrap_bpf *bootstrap_bpf::open(const struct bpf_object_open_opts *opts) { return bootstrap_bpf__open_opts(opts); }
+struct bootstrap_bpf *bootstrap_bpf::open(const struct bpf_skelect_open_opts *opts) { return bootstrap_bpf__open_opts(opts); }
 struct bootstrap_bpf *bootstrap_bpf::open_and_load() { return bootstrap_bpf__open_and_load(); }
 int bootstrap_bpf::load(struct bootstrap_bpf *skel) { return bootstrap_bpf__load(skel); }
 int bootstrap_bpf::attach(struct bootstrap_bpf *skel) { return bootstrap_bpf__attach(skel); }

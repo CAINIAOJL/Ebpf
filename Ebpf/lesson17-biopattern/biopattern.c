@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
 		    };							    \
 	    })
     */
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
     struct partition *partitions = NULL;
     const struct partition *partition;
     static const struct argp argp = {
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
         .parser = parse_arg,
     };
 
-    struct biopattern *obj;
+    struct biopattern *skel;
     int err;
 
     err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -190,9 +190,9 @@ int main(int argc, char** argv) {
 
     libbpf_set_print(libbpf_print_fn);
 
-    obj = biopattern__open_opts(&open_opts);
-    if(!obj) {
-        fprintf(stderr, "Failed to open BPF object\n");
+    skel = biopattern__open_opts(&open_opts);
+    if(!skel) {
+        fprintf(stderr, "Failed to open BPF skelect\n");
         return 1;
     }
     
@@ -208,17 +208,17 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Invalid disk name: %s\n", env.disk);
             goto cleanup;
         }
-        obj->rodata->filter_dev = true;
-        obj->rodata->targ_dev = partition->dev;
+        skel->rodata->filter_dev = true;
+        skel->rodata->targ_dev = partition->dev;
     }
     
-    err = biopattern__load(obj);
+    err = biopattern__load(skel);
     if(err) {
         fprintf(stderr, "Failed to load BPF program: %d\n", err);
         goto cleanup;
     }
 
-    err = biopattern__attach(obj);
+    err = biopattern__attach(skel);
     if(err) {
         fprintf("Failed to attach BPF program: %d\n", err);
         goto cleanup;
@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
     while(1) {
         sleep(env.interval);
 
-        err = print_map(obj->maps.counters, partitions);
+        err = print_map(skel->maps.counters, partitions);
         if(err) {
             break;
         }
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
         }
     }
 cleanup:
-    biopattern__destroy(obj);
+    biopattern__destroy(skel);
     partitions__free(partitions);
 
     return err != 0;
@@ -409,7 +409,7 @@ static int print_map(struct bpf_map *counters, struct partitions *partitions)
 
 int main(int argc, char **argv)
 {
-	LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+	LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
 	struct partitions *partitions = NULL;
 	const struct partition *partition;
 	static const struct argp argp = {
@@ -417,7 +417,7 @@ int main(int argc, char **argv)
 		.parser = parse_arg,
 		.doc = argp_program_doc,
 	};
-	struct biopattern *obj;
+	struct biopattern *skel;
 	int err;
 
 	err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -426,9 +426,9 @@ int main(int argc, char **argv)
 
 	libbpf_set_print(libbpf_print_fn);
 
-	obj = biopattern__open_opts(&open_opts);
-	if (!obj) {
-		fprintf(stderr, "failed to open BPF object\n");
+	skel = biopattern__open_opts(&open_opts);
+	if (!skel) {
+		fprintf(stderr, "failed to open BPF skelect\n");
 		return 1;
 	}
 
@@ -445,17 +445,17 @@ int main(int argc, char **argv)
 			fprintf(stderr, "invaild partition name: not exist\n");
 			goto cleanup;
 		}
-		obj->rodata->filter_dev = true;
-		obj->rodata->targ_dev = partition->dev;
+		skel->rodata->filter_dev = true;
+		skel->rodata->targ_dev = partition->dev;
 	}
 
-	err = biopattern__load(obj);
+	err = biopattern__load(skel);
 	if (err) {
-		fprintf(stderr, "failed to load BPF object: %d\n", err);
+		fprintf(stderr, "failed to load BPF skelect: %d\n", err);
 		goto cleanup;
 	}
 
-	err = biopattern__attach(obj);
+	err = biopattern__attach(skel);
 	if (err) {
 		fprintf(stderr, "failed to attach BPF programs\n");
 		goto cleanup;
@@ -474,7 +474,7 @@ int main(int argc, char **argv)
 	/*while (1) {
 		sleep(env.interval);
 
-		err = print_map(obj->maps.counters, partitions);
+		err = print_map(skel->maps.counters, partitions);
 		if (err)
 			break;
 
@@ -483,7 +483,7 @@ int main(int argc, char **argv)
 	}
 
 cleanup:
-	biopattern__destroy(obj);
+	biopattern__destroy(skel);
 	partitions__free(partitions);
 
 	return err != 0;

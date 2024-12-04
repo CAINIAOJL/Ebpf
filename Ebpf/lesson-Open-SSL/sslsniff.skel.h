@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct sslsniff {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *perf_SSL_events;
 		struct bpf_map *ssl_data;
@@ -38,7 +38,7 @@ struct sslsniff {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct sslsniff *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct sslsniff *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct sslsniff *open_and_load();
 	static inline int load(struct sslsniff *skel);
 	static inline int attach(struct sslsniff *skel);
@@ -49,41 +49,41 @@ struct sslsniff {
 };
 
 static void
-sslsniff__destroy(struct sslsniff *obj)
+sslsniff__destroy(struct sslsniff *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-sslsniff__create_skeleton(struct sslsniff *obj);
+sslsniff__create_skeleton(struct sslsniff *skel);
 
 static inline struct sslsniff *
-sslsniff__open_opts(const struct bpf_object_open_opts *opts)
+sslsniff__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct sslsniff *obj;
+	struct sslsniff *skel;
 	int err;
 
-	obj = (struct sslsniff *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct sslsniff *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = sslsniff__create_skeleton(obj);
+	err = sslsniff__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	sslsniff__destroy(obj);
+	sslsniff__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -95,50 +95,50 @@ sslsniff__open(void)
 }
 
 static inline int
-sslsniff__load(struct sslsniff *obj)
+sslsniff__load(struct sslsniff *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct sslsniff *
 sslsniff__open_and_load(void)
 {
-	struct sslsniff *obj;
+	struct sslsniff *skel;
 	int err;
 
-	obj = sslsniff__open();
-	if (!obj)
+	skel = sslsniff__open();
+	if (!skel)
 		return NULL;
-	err = sslsniff__load(obj);
+	err = sslsniff__load(skel);
 	if (err) {
-		sslsniff__destroy(obj);
+		sslsniff__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-sslsniff__attach(struct sslsniff *obj)
+sslsniff__attach(struct sslsniff *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-sslsniff__detach(struct sslsniff *obj)
+sslsniff__detach(struct sslsniff *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *sslsniff__elf_bytes(size_t *sz);
 
 static inline int
-sslsniff__create_skeleton(struct sslsniff *obj)
+sslsniff__create_skeleton(struct sslsniff *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -146,7 +146,7 @@ sslsniff__create_skeleton(struct sslsniff *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "sslsniff";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 5;
@@ -158,20 +158,20 @@ sslsniff__create_skeleton(struct sslsniff *obj)
 	}
 
 	s->maps[0].name = "perf_SSL_events";
-	s->maps[0].map = &obj->maps.perf_SSL_events;
+	s->maps[0].map = &skel->maps.perf_SSL_events;
 
 	s->maps[1].name = "ssl_data";
-	s->maps[1].map = &obj->maps.ssl_data;
+	s->maps[1].map = &skel->maps.ssl_data;
 
 	s->maps[2].name = "start_ns";
-	s->maps[2].map = &obj->maps.start_ns;
+	s->maps[2].map = &skel->maps.start_ns;
 
 	s->maps[3].name = "bufs";
-	s->maps[3].map = &obj->maps.bufs;
+	s->maps[3].map = &skel->maps.bufs;
 
 	s->maps[4].name = "sslsniff.rodata";
-	s->maps[4].map = &obj->maps.rodata;
-	s->maps[4].mmaped = (void **)&obj->rodata;
+	s->maps[4].map = &skel->maps.rodata;
+	s->maps[4].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 5;
@@ -183,31 +183,31 @@ sslsniff__create_skeleton(struct sslsniff *obj)
 	}
 
 	s->progs[0].name = "probe_SSL_rw_enter";
-	s->progs[0].prog = &obj->progs.probe_SSL_rw_enter;
-	s->progs[0].link = &obj->links.probe_SSL_rw_enter;
+	s->progs[0].prog = &skel->progs.probe_SSL_rw_enter;
+	s->progs[0].link = &skel->links.probe_SSL_rw_enter;
 
 	s->progs[1].name = "probe_SSL_do_handshake_enter";
-	s->progs[1].prog = &obj->progs.probe_SSL_do_handshake_enter;
-	s->progs[1].link = &obj->links.probe_SSL_do_handshake_enter;
+	s->progs[1].prog = &skel->progs.probe_SSL_do_handshake_enter;
+	s->progs[1].link = &skel->links.probe_SSL_do_handshake_enter;
 
 	s->progs[2].name = "probe_SSL_read_exit";
-	s->progs[2].prog = &obj->progs.probe_SSL_read_exit;
-	s->progs[2].link = &obj->links.probe_SSL_read_exit;
+	s->progs[2].prog = &skel->progs.probe_SSL_read_exit;
+	s->progs[2].link = &skel->links.probe_SSL_read_exit;
 
 	s->progs[3].name = "probe_SSL_write_exit";
-	s->progs[3].prog = &obj->progs.probe_SSL_write_exit;
-	s->progs[3].link = &obj->links.probe_SSL_write_exit;
+	s->progs[3].prog = &skel->progs.probe_SSL_write_exit;
+	s->progs[3].link = &skel->links.probe_SSL_write_exit;
 
 	s->progs[4].name = "probe_SSL_do_handshake_exit";
-	s->progs[4].prog = &obj->progs.probe_SSL_do_handshake_exit;
-	s->progs[4].link = &obj->links.probe_SSL_do_handshake_exit;
+	s->progs[4].prog = &skel->progs.probe_SSL_do_handshake_exit;
+	s->progs[4].link = &skel->links.probe_SSL_do_handshake_exit;
 
 	s->data = sslsniff__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -1196,7 +1196,7 @@ static inline const void *sslsniff__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct sslsniff *sslsniff::open(const struct bpf_object_open_opts *opts) { return sslsniff__open_opts(opts); }
+struct sslsniff *sslsniff::open(const struct bpf_skelect_open_opts *opts) { return sslsniff__open_opts(opts); }
 struct sslsniff *sslsniff::open_and_load() { return sslsniff__open_and_load(); }
 int sslsniff::load(struct sslsniff *skel) { return sslsniff__load(skel); }
 int sslsniff::attach(struct sslsniff *skel) { return sslsniff__attach(skel); }

@@ -418,7 +418,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size) {
 }
 
 int main(int argc, char **argv) {
-    LIBBPF_OPTS(bpf_object_open_opts, open_opts);
+    LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
     struct sslsniff *skel;
     struct perf_buffer *pb = NULL;
     int err;
@@ -432,7 +432,7 @@ int main(int argc, char **argv) {
 
     skel = sslsniff__open_opts(&open_opts);
     if(!skel) {
-        warn("Failed to open BPF object\n");
+        warn("Failed to open BPF skelect\n");
         goto cleanup;
     }
 
@@ -441,7 +441,7 @@ int main(int argc, char **argv) {
 
     err = sslsniff__load(skel);
     if(err) {
-        warn("Failed to load BPF object: %d\n", err);
+        warn("Failed to load BPF skelect: %d\n", err);
         goto cleanup;
     }
     //openssl
@@ -872,8 +872,8 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size) {
 }
 
 int main(int argc, char **argv) {
-	LIBBPF_OPTS(bpf_object_open_opts, open_opts);
-	struct sslsniff *obj = NULL;
+	LIBBPF_OPTS(bpf_skelect_open_opts, open_opts);
+	struct sslsniff *skel = NULL;
 	struct perf_buffer *pb = NULL;
 	int err;
 
@@ -883,38 +883,38 @@ int main(int argc, char **argv) {
 
 	libbpf_set_print(libbpf_print_fn);
 
-	obj = sslsniff__open_opts(&open_opts);
-	if (!obj) {
-		warn("failed to open BPF object\n");
+	skel = sslsniff__open_opts(&open_opts);
+	if (!skel) {
+		warn("failed to open BPF skelect\n");
 		goto cleanup;
 	}
 
-	obj->rodata->targ_uid = env.uid;
-	obj->rodata->targ_pid = env.pid == INVALID_PID ? 0 : env.pid;
+	skel->rodata->targ_uid = env.uid;
+	skel->rodata->targ_pid = env.pid == INVALID_PID ? 0 : env.pid;
 
-	err = sslsniff__load(obj);
+	err = sslsniff__load(skel);
 	if (err) {
-		warn("failed to load BPF object: %d\n", err);
+		warn("failed to load BPF skelect: %d\n", err);
 		goto cleanup;
 	}
 
 	if (env.openssl) {
 		char *openssl_path = find_library_path("libssl.so");
 		printf("OpenSSL path: %s\n", openssl_path);
-		attach_openssl(obj, openssl_path);
+		attach_openssl(skel, openssl_path);
 	}
 	if (env.gnutls) {
 		char *gnutls_path = find_library_path("libgnutls.so");
 		printf("GnuTLS path: %s\n", gnutls_path);
-		attach_gnutls(obj, gnutls_path);
+		attach_gnutls(skel, gnutls_path);
 	}
 	if (env.nss) {
 		char *nss_path = find_library_path("libnspr4.so");
 		printf("NSS path: %s\n", nss_path);
-		attach_nss(obj, nss_path);
+		attach_nss(skel, nss_path);
 	}
 
-	pb = perf_buffer__new(bpf_map__fd(obj->maps.perf_SSL_events),
+	pb = perf_buffer__new(bpf_map__fd(skel->maps.perf_SSL_events),
 							PERF_BUFFER_PAGES, handle_event, handle_lost_events,
 							NULL, NULL);
 	if (!pb) {
@@ -951,7 +951,7 @@ int main(int argc, char **argv) {
 
 cleanup:
 	perf_buffer__free(pb);
-	sslsniff__destroy(obj);
+	sslsniff__destroy(skel);
 	return err != 0;
 }
 

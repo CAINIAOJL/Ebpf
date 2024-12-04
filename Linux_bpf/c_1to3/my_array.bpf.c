@@ -23,7 +23,7 @@ int main(int argc,char** argv) {
         printf("Failed to add element to map: %d(%s)\n", added, strerror(errno));
         return -1;
     }
-    pinned = bpf_obj_pin(fd, my_array);
+    pinned = bpf_skel_pin(fd, my_array);
     if(pinned < 0) {
         printf("Failed to pin map: %d(%s)\n", pinned, strerror(errno));
         return -1;
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    pinned = bpf_obj_pin(fd, my_array);
+    pinned = bpf_skel_pin(fd, my_array);
     if (pinned < 0) {
         printf("Failed to pin map: %d(%s)\n", pinned, strerror(errno));
         return -1;

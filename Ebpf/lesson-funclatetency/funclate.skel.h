@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct funclate {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *start;
 		struct bpf_map *rodata;
@@ -33,7 +33,7 @@ struct funclate {
 	} *bss;
 
 #ifdef __cplusplus
-	static inline struct funclate *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct funclate *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct funclate *open_and_load();
 	static inline int load(struct funclate *skel);
 	static inline int attach(struct funclate *skel);
@@ -44,41 +44,41 @@ struct funclate {
 };
 
 static void
-funclate__destroy(struct funclate *obj)
+funclate__destroy(struct funclate *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-funclate__create_skeleton(struct funclate *obj);
+funclate__create_skeleton(struct funclate *skel);
 
 static inline struct funclate *
-funclate__open_opts(const struct bpf_object_open_opts *opts)
+funclate__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct funclate *obj;
+	struct funclate *skel;
 	int err;
 
-	obj = (struct funclate *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct funclate *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = funclate__create_skeleton(obj);
+	err = funclate__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	funclate__destroy(obj);
+	funclate__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -90,50 +90,50 @@ funclate__open(void)
 }
 
 static inline int
-funclate__load(struct funclate *obj)
+funclate__load(struct funclate *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct funclate *
 funclate__open_and_load(void)
 {
-	struct funclate *obj;
+	struct funclate *skel;
 	int err;
 
-	obj = funclate__open();
-	if (!obj)
+	skel = funclate__open();
+	if (!skel)
 		return NULL;
-	err = funclate__load(obj);
+	err = funclate__load(skel);
 	if (err) {
-		funclate__destroy(obj);
+		funclate__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-funclate__attach(struct funclate *obj)
+funclate__attach(struct funclate *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-funclate__detach(struct funclate *obj)
+funclate__detach(struct funclate *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *funclate__elf_bytes(size_t *sz);
 
 static inline int
-funclate__create_skeleton(struct funclate *obj)
+funclate__create_skeleton(struct funclate *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -141,7 +141,7 @@ funclate__create_skeleton(struct funclate *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "funclate";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 3;
@@ -153,15 +153,15 @@ funclate__create_skeleton(struct funclate *obj)
 	}
 
 	s->maps[0].name = "start";
-	s->maps[0].map = &obj->maps.start;
+	s->maps[0].map = &skel->maps.start;
 
 	s->maps[1].name = "funclate.rodata";
-	s->maps[1].map = &obj->maps.rodata;
-	s->maps[1].mmaped = (void **)&obj->rodata;
+	s->maps[1].map = &skel->maps.rodata;
+	s->maps[1].mmaped = (void **)&skel->rodata;
 
 	s->maps[2].name = "funclate.bss";
-	s->maps[2].map = &obj->maps.bss;
-	s->maps[2].mmaped = (void **)&obj->bss;
+	s->maps[2].map = &skel->maps.bss;
+	s->maps[2].mmaped = (void **)&skel->bss;
 
 	/* programs */
 	s->prog_cnt = 2;
@@ -173,19 +173,19 @@ funclate__create_skeleton(struct funclate *obj)
 	}
 
 	s->progs[0].name = "dummy_kprobe";
-	s->progs[0].prog = &obj->progs.dummy_kprobe;
-	s->progs[0].link = &obj->links.dummy_kprobe;
+	s->progs[0].prog = &skel->progs.dummy_kprobe;
+	s->progs[0].link = &skel->links.dummy_kprobe;
 
 	s->progs[1].name = "dummy_kretprobe";
-	s->progs[1].prog = &obj->progs.dummy_kretprobe;
-	s->progs[1].link = &obj->links.dummy_kretprobe;
+	s->progs[1].prog = &skel->progs.dummy_kretprobe;
+	s->progs[1].link = &skel->links.dummy_kretprobe;
 
 	s->data = funclate__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -733,7 +733,7 @@ static inline const void *funclate__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct funclate *funclate::open(const struct bpf_object_open_opts *opts) { return funclate__open_opts(opts); }
+struct funclate *funclate::open(const struct bpf_skelect_open_opts *opts) { return funclate__open_opts(opts); }
 struct funclate *funclate::open_and_load() { return funclate__open_and_load(); }
 int funclate::load(struct funclate *skel) { return funclate__load(skel); }
 int funclate::attach(struct funclate *skel) { return funclate__attach(skel); }

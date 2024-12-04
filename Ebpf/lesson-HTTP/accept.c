@@ -56,13 +56,13 @@ static void sig_handler(int sig) {
 
 
 int main(int argc, char **argv) {
-    struct accept *obj;
+    struct accept *skel;
     struct perf_buffer *pb = NULL;
     int err;
 
-    obj = accept__open();
-    if (!obj) {
-        warn("failed to open BPF object\n");
+    skel = accept__open();
+    if (!skel) {
+        warn("failed to open BPF skelect\n");
         return 1;
     }
 

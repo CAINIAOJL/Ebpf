@@ -4,25 +4,25 @@
 #include <unistd.h>
 
 int main() {
-    struct bpf_object *obj;
+    struct bpf_skelect *skel;
     int map_fd;
     int key = 0;
     u64 count;
 
     // 加载和验证 BPF 程序
-    obj = bpf_object__open_file("trace.o", NULL);
-    if (libbpf_get_error(obj)) {
-        fprintf(stderr, "Failed to open BPF object\n");
+    skel = bpf_skelect__open_file("trace.o", NULL);
+    if (libbpf_get_error(skel)) {
+        fprintf(stderr, "Failed to open BPF skelect\n");
         return 1;
     }
     
-    if (bpf_object__load(obj)) {
-        fprintf(stderr, "Failed to load BPF object\n");
+    if (bpf_skelect__load(skel)) {
+        fprintf(stderr, "Failed to load BPF skelect\n");
         return 1;
     }
 
     // 获取 Map 的文件描述符
-    map_fd = bpf_object__find_map_fd_by_name(obj, "syscall_count_map");
+    map_fd = bpf_skelect__find_map_fd_by_name(skel, "syscall_count_map");
     if (map_fd < 0) {
         fprintf(stderr, "Failed to find map\n");
         return 1;
@@ -37,7 +37,7 @@ int main() {
         printf("System call count: %llu\n", count);
     }
 
-    bpf_object__close(obj);
+    bpf_skelect__close(skel);
     return 0;
 }
 

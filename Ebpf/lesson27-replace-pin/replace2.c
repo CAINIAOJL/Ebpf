@@ -307,7 +307,7 @@ static int pin_stuff(struct replace2 *skel) {
     char pin_path[100];
 
     // pin maps
-    bpf_object__for_each_map(map, skel->obj) {
+    bpf_skelect__for_each_map(map, skel->skel) {
         sprintf(pin_path, "%s/map_%02d", base_folder, counter++);
         err = pin_map(map, pin_path);
         if(err) {return err;}
@@ -315,7 +315,7 @@ static int pin_stuff(struct replace2 *skel) {
 
     // pin programs
     counter = 0;
-    bpf_object__for_each_program(prog, skel->obj) {
+    bpf_skelect__for_each_program(prog, skel->skel) {
         sprintf(pin_path, "%s/prog_%02d", base_folder, counter++);
         err = pin_program(prog, pin_path);
         if(err) {return err;}
@@ -728,7 +728,7 @@ int rmtree(const char *path)
             continue;
         }
 
-        // remove a file object
+        // remove a file skelect
         if (unlink(full_path)) {
             printf("Can`t remove a file: %s\n", full_path);
             return 1;
@@ -736,7 +736,7 @@ int rmtree(const char *path)
         free(full_path);
     }
 
-    // remove the devastated directory and close the object of it
+    // remove the devastated directory and close the skelect of it
     if (rmdir(path)) {
         printf("Can`t remove a directory: %s\n", path);
         return 1;
@@ -797,7 +797,7 @@ static int pin_stuff(struct replace2 *skel) {
     char pin_path[100];
 
     // Pin Maps
-    bpf_object__for_each_map(map, skel->obj) {
+    bpf_skelect__for_each_map(map, skel->skel) {
         sprintf(pin_path, "%s/map_%02d", base_folder, counter++);
         err = pin_map(map, pin_path);
         if (err) { return err; }
@@ -805,7 +805,7 @@ static int pin_stuff(struct replace2 *skel) {
 
     // Pin Programs
     counter = 0;
-    bpf_object__for_each_program(prog, skel->obj) {
+    bpf_skelect__for_each_program(prog, skel->skel) {
         sprintf(pin_path, "%s/prog_%02d", base_folder, counter++);
         err = pin_program(prog, pin_path);
         if (err) { return err; }

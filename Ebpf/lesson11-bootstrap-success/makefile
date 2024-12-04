@@ -3,11 +3,11 @@ OUTPUT := .output
 CLANG ?= clang
 LIBBPF_SRC := $(abspath ../third_party/libbpf/src)
 BPFTOOL_SRC := $(abspath ../third_party/bpftool/src)
-LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
+LIBBPF_skel := $(abspath $(OUTPUT)/libbpf.a)
 BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
 LIBBLAZESYM_SRC := $(abspath ../third_party/blazesym/)
-LIBBLAZESYM_OBJ := $(abspath $(OUTPUT)/libblazesym.a)
+LIBBLAZESYM_skel := $(abspath $(OUTPUT)/libblazesym.a)
 LIBBLAZESYM_HEADER := $(abspath $(OUTPUT)/blazesym.h)
 ARCH ?= $(shell uname -m | sed 's/x86_64/x86/' \
 			 | sed 's/arm.*/arm/' \
@@ -81,10 +81,10 @@ $(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT):
 	$(Q)mkdir -p $@
 
 # Build libbpf
-$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
+$(LIBBPF_skel): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf
 	$(call msg,LIB,$@)
 	$(Q)$(MAKE) -C $(LIBBPF_SRC) BUILD_STATIC_ONLY=1		      \
-		    OBJDIR=$(dir $@)/libbpf DESTDIR=$(dir $@)		      \
+		    skelDIR=$(dir $@)/libbpf DESTDIR=$(dir $@)		      \
 		    INCLUDEDIR= LIBDIR= UAPIDIR=			      \
 		    install
 
@@ -97,7 +97,7 @@ $(BPFTOOL): | $(BPFTOOL_OUTPUT)
 $(LIBBLAZESYM_SRC)/target/release/libblazesym.a::
 	$(Q)cd $(LIBBLAZESYM_SRC) && $(CARGO) build --features=cheader,dont-generate-test-files --release
 
-$(LIBBLAZESYM_OBJ): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
+$(LIBBLAZESYM_skel): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
 	$(call msg,LIB, $@)
 	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/libblazesym.a $@
 
@@ -106,12 +106,12 @@ $(LIBBLAZESYM_HEADER): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPU
 	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/blazesym.h $@
 
 # Build BPF code
-$(OUTPUT)/%.bpf.o: %.bpf.c $(LIBBPF_OBJ) $(wildcard %.h) $(VMLINUX) | $(OUTPUT) $(BPFTOOL)
+$(OUTPUT)/%.bpf.o: %.bpf.c $(LIBBPF_skel) $(wildcard %.h) $(VMLINUX) | $(OUTPUT) $(BPFTOOL)
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) -g -O2 -target bpf -D__TARGET_ARCH_$(ARCH)		      \
 		     $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)		      \
 		     -c $(filter %.c,$^) -o $(patsubst %.bpf.o,%.tmp.bpf.o,$@)
-	$(Q)$(BPFTOOL) gen object $@ $(patsubst %.bpf.o,%.tmp.bpf.o,$@)
+	$(Q)$(BPFTOOL) gen skelect $@ $(patsubst %.bpf.o,%.tmp.bpf.o,$@)
 
 # Generate BPF skeletons
 $(OUTPUT)/%.skel.h: $(OUTPUT)/%.bpf.o | $(OUTPUT) $(BPFTOOL)
@@ -127,10 +127,10 @@ $(OUTPUT)/%.o: %.c $(wildcard %.h) | $(OUTPUT)
 
 $(patsubst %,$(OUTPUT)/%.o,$(BZS_APPS)): $(LIBBLAZESYM_HEADER)
 
-$(BZS_APPS): $(LIBBLAZESYM_OBJ)
+$(BZS_APPS): $(LIBBLAZESYM_skel)
 
 # Build application binary
-$(APPS): %: $(OUTPUT)/%.o $(LIBBPF_OBJ) | $(OUTPUT)
+$(APPS): %: $(OUTPUT)/%.o $(LIBBPF_skel) | $(OUTPUT)
 	$(call msg,BINARY,$@)
 	$(Q)$(CC) $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
 

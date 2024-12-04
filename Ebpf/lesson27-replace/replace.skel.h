@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct replace {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *map_fds;
 		struct bpf_map *map_buff_addrs;
@@ -50,7 +50,7 @@ struct replace {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct replace *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct replace *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct replace *open_and_load();
 	static inline int load(struct replace *skel);
 	static inline int attach(struct replace *skel);
@@ -61,41 +61,41 @@ struct replace {
 };
 
 static void
-replace__destroy(struct replace *obj)
+replace__destroy(struct replace *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-replace__create_skeleton(struct replace *obj);
+replace__create_skeleton(struct replace *skel);
 
 static inline struct replace *
-replace__open_opts(const struct bpf_object_open_opts *opts)
+replace__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct replace *obj;
+	struct replace *skel;
 	int err;
 
-	obj = (struct replace *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct replace *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = replace__create_skeleton(obj);
+	err = replace__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	replace__destroy(obj);
+	replace__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -107,50 +107,50 @@ replace__open(void)
 }
 
 static inline int
-replace__load(struct replace *obj)
+replace__load(struct replace *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct replace *
 replace__open_and_load(void)
 {
-	struct replace *obj;
+	struct replace *skel;
 	int err;
 
-	obj = replace__open();
-	if (!obj)
+	skel = replace__open();
+	if (!skel)
 		return NULL;
-	err = replace__load(obj);
+	err = replace__load(skel);
 	if (err) {
-		replace__destroy(obj);
+		replace__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-replace__attach(struct replace *obj)
+replace__attach(struct replace *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-replace__detach(struct replace *obj)
+replace__detach(struct replace *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *replace__elf_bytes(size_t *sz);
 
 static inline int
-replace__create_skeleton(struct replace *obj)
+replace__create_skeleton(struct replace *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -158,7 +158,7 @@ replace__create_skeleton(struct replace *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "replace";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 7;
@@ -170,26 +170,26 @@ replace__create_skeleton(struct replace *obj)
 	}
 
 	s->maps[0].name = "map_fds";
-	s->maps[0].map = &obj->maps.map_fds;
+	s->maps[0].map = &skel->maps.map_fds;
 
 	s->maps[1].name = "map_buff_addrs";
-	s->maps[1].map = &obj->maps.map_buff_addrs;
+	s->maps[1].map = &skel->maps.map_buff_addrs;
 
 	s->maps[2].name = "map_name_addrs";
-	s->maps[2].map = &obj->maps.map_name_addrs;
+	s->maps[2].map = &skel->maps.map_name_addrs;
 
 	s->maps[3].name = "map_prog_array";
-	s->maps[3].map = &obj->maps.map_prog_array;
+	s->maps[3].map = &skel->maps.map_prog_array;
 
 	s->maps[4].name = "map_to_replace_addrs";
-	s->maps[4].map = &obj->maps.map_to_replace_addrs;
+	s->maps[4].map = &skel->maps.map_to_replace_addrs;
 
 	s->maps[5].name = "rb";
-	s->maps[5].map = &obj->maps.rb;
+	s->maps[5].map = &skel->maps.rb;
 
 	s->maps[6].name = "replace.rodata";
-	s->maps[6].map = &obj->maps.rodata;
-	s->maps[6].mmaped = (void **)&obj->rodata;
+	s->maps[6].map = &skel->maps.rodata;
+	s->maps[6].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 7;
@@ -201,39 +201,39 @@ replace__create_skeleton(struct replace *obj)
 	}
 
 	s->progs[0].name = "handle_close_exit";
-	s->progs[0].prog = &obj->progs.handle_close_exit;
-	s->progs[0].link = &obj->links.handle_close_exit;
+	s->progs[0].prog = &skel->progs.handle_close_exit;
+	s->progs[0].link = &skel->links.handle_close_exit;
 
 	s->progs[1].name = "handle_openat_enter";
-	s->progs[1].prog = &obj->progs.handle_openat_enter;
-	s->progs[1].link = &obj->links.handle_openat_enter;
+	s->progs[1].prog = &skel->progs.handle_openat_enter;
+	s->progs[1].link = &skel->links.handle_openat_enter;
 
 	s->progs[2].name = "handle_openat_exit";
-	s->progs[2].prog = &obj->progs.handle_openat_exit;
-	s->progs[2].link = &obj->links.handle_openat_exit;
+	s->progs[2].prog = &skel->progs.handle_openat_exit;
+	s->progs[2].link = &skel->links.handle_openat_exit;
 
 	s->progs[3].name = "handle_read_enter";
-	s->progs[3].prog = &obj->progs.handle_read_enter;
-	s->progs[3].link = &obj->links.handle_read_enter;
+	s->progs[3].prog = &skel->progs.handle_read_enter;
+	s->progs[3].link = &skel->links.handle_read_enter;
 
 	s->progs[4].name = "find_possible_addrs";
-	s->progs[4].prog = &obj->progs.find_possible_addrs;
-	s->progs[4].link = &obj->links.find_possible_addrs;
+	s->progs[4].prog = &skel->progs.find_possible_addrs;
+	s->progs[4].link = &skel->links.find_possible_addrs;
 
 	s->progs[5].name = "check_possible_addresses";
-	s->progs[5].prog = &obj->progs.check_possible_addresses;
-	s->progs[5].link = &obj->links.check_possible_addresses;
+	s->progs[5].prog = &skel->progs.check_possible_addresses;
+	s->progs[5].link = &skel->links.check_possible_addresses;
 
 	s->progs[6].name = "overwrite_addresses";
-	s->progs[6].prog = &obj->progs.overwrite_addresses;
-	s->progs[6].link = &obj->links.overwrite_addresses;
+	s->progs[6].prog = &skel->progs.overwrite_addresses;
+	s->progs[6].link = &skel->links.overwrite_addresses;
 
 	s->data = replace__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -37052,7 +37052,7 @@ static inline const void *replace__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct replace *replace::open(const struct bpf_object_open_opts *opts) { return replace__open_opts(opts); }
+struct replace *replace::open(const struct bpf_skelect_open_opts *opts) { return replace__open_opts(opts); }
 struct replace *replace::open_and_load() { return replace__open_and_load(); }
 int replace::load(struct replace *skel) { return replace__load(skel); }
 int replace::attach(struct replace *skel) { return replace__attach(skel); }

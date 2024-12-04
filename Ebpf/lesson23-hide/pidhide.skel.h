@@ -9,8 +9,8 @@
 #include <bpf/libbpf.h>
 
 struct pidhide {
-	struct bpf_object_skeleton *skeleton;
-	struct bpf_object *obj;
+	struct bpf_skelect_skeleton *skeleton;
+	struct bpf_skelect *skel;
 	struct {
 		struct bpf_map *map_buffs;
 		struct bpf_map *map_bytes_read;
@@ -36,7 +36,7 @@ struct pidhide {
 	} *rodata;
 
 #ifdef __cplusplus
-	static inline struct pidhide *open(const struct bpf_object_open_opts *opts = nullptr);
+	static inline struct pidhide *open(const struct bpf_skelect_open_opts *opts = nullptr);
 	static inline struct pidhide *open_and_load();
 	static inline int load(struct pidhide *skel);
 	static inline int attach(struct pidhide *skel);
@@ -47,41 +47,41 @@ struct pidhide {
 };
 
 static void
-pidhide__destroy(struct pidhide *obj)
+pidhide__destroy(struct pidhide *skel)
 {
-	if (!obj)
+	if (!skel)
 		return;
-	if (obj->skeleton)
-		bpf_object__destroy_skeleton(obj->skeleton);
-	free(obj);
+	if (skel->skeleton)
+		bpf_skelect__destroy_skeleton(skel->skeleton);
+	free(skel);
 }
 
 static inline int
-pidhide__create_skeleton(struct pidhide *obj);
+pidhide__create_skeleton(struct pidhide *skel);
 
 static inline struct pidhide *
-pidhide__open_opts(const struct bpf_object_open_opts *opts)
+pidhide__open_opts(const struct bpf_skelect_open_opts *opts)
 {
-	struct pidhide *obj;
+	struct pidhide *skel;
 	int err;
 
-	obj = (struct pidhide *)calloc(1, sizeof(*obj));
-	if (!obj) {
+	skel = (struct pidhide *)calloc(1, sizeof(*skel));
+	if (!skel) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	err = pidhide__create_skeleton(obj);
+	err = pidhide__create_skeleton(skel);
 	if (err)
 		goto err_out;
 
-	err = bpf_object__open_skeleton(obj->skeleton, opts);
+	err = bpf_skelect__open_skeleton(skel->skeleton, opts);
 	if (err)
 		goto err_out;
 
-	return obj;
+	return skel;
 err_out:
-	pidhide__destroy(obj);
+	pidhide__destroy(skel);
 	errno = -err;
 	return NULL;
 }
@@ -93,50 +93,50 @@ pidhide__open(void)
 }
 
 static inline int
-pidhide__load(struct pidhide *obj)
+pidhide__load(struct pidhide *skel)
 {
-	return bpf_object__load_skeleton(obj->skeleton);
+	return bpf_skelect__load_skeleton(skel->skeleton);
 }
 
 static inline struct pidhide *
 pidhide__open_and_load(void)
 {
-	struct pidhide *obj;
+	struct pidhide *skel;
 	int err;
 
-	obj = pidhide__open();
-	if (!obj)
+	skel = pidhide__open();
+	if (!skel)
 		return NULL;
-	err = pidhide__load(obj);
+	err = pidhide__load(skel);
 	if (err) {
-		pidhide__destroy(obj);
+		pidhide__destroy(skel);
 		errno = -err;
 		return NULL;
 	}
-	return obj;
+	return skel;
 }
 
 static inline int
-pidhide__attach(struct pidhide *obj)
+pidhide__attach(struct pidhide *skel)
 {
-	return bpf_object__attach_skeleton(obj->skeleton);
+	return bpf_skelect__attach_skeleton(skel->skeleton);
 }
 
 static inline void
-pidhide__detach(struct pidhide *obj)
+pidhide__detach(struct pidhide *skel)
 {
-	bpf_object__detach_skeleton(obj->skeleton);
+	bpf_skelect__detach_skeleton(skel->skeleton);
 }
 
 static inline const void *pidhide__elf_bytes(size_t *sz);
 
 static inline int
-pidhide__create_skeleton(struct pidhide *obj)
+pidhide__create_skeleton(struct pidhide *skel)
 {
-	struct bpf_object_skeleton *s;
+	struct bpf_skelect_skeleton *s;
 	int err;
 
-	s = (struct bpf_object_skeleton *)calloc(1, sizeof(*s));
+	s = (struct bpf_skelect_skeleton *)calloc(1, sizeof(*s));
 	if (!s)	{
 		err = -ENOMEM;
 		goto err;
@@ -144,7 +144,7 @@ pidhide__create_skeleton(struct pidhide *obj)
 
 	s->sz = sizeof(*s);
 	s->name = "pidhide";
-	s->obj = &obj->obj;
+	s->skel = &skel->skel;
 
 	/* maps */
 	s->map_cnt = 6;
@@ -156,23 +156,23 @@ pidhide__create_skeleton(struct pidhide *obj)
 	}
 
 	s->maps[0].name = "map_buffs";
-	s->maps[0].map = &obj->maps.map_buffs;
+	s->maps[0].map = &skel->maps.map_buffs;
 
 	s->maps[1].name = "map_bytes_read";
-	s->maps[1].map = &obj->maps.map_bytes_read;
+	s->maps[1].map = &skel->maps.map_bytes_read;
 
 	s->maps[2].name = "map_prog_array";
-	s->maps[2].map = &obj->maps.map_prog_array;
+	s->maps[2].map = &skel->maps.map_prog_array;
 
 	s->maps[3].name = "map_to_patch";
-	s->maps[3].map = &obj->maps.map_to_patch;
+	s->maps[3].map = &skel->maps.map_to_patch;
 
 	s->maps[4].name = "rb";
-	s->maps[4].map = &obj->maps.rb;
+	s->maps[4].map = &skel->maps.rb;
 
 	s->maps[5].name = "pidhide.rodata";
-	s->maps[5].map = &obj->maps.rodata;
-	s->maps[5].mmaped = (void **)&obj->rodata;
+	s->maps[5].map = &skel->maps.rodata;
+	s->maps[5].mmaped = (void **)&skel->rodata;
 
 	/* programs */
 	s->prog_cnt = 3;
@@ -184,23 +184,23 @@ pidhide__create_skeleton(struct pidhide *obj)
 	}
 
 	s->progs[0].name = "handle_getdents_enter";
-	s->progs[0].prog = &obj->progs.handle_getdents_enter;
-	s->progs[0].link = &obj->links.handle_getdents_enter;
+	s->progs[0].prog = &skel->progs.handle_getdents_enter;
+	s->progs[0].link = &skel->links.handle_getdents_enter;
 
 	s->progs[1].name = "handle_getdents_exit";
-	s->progs[1].prog = &obj->progs.handle_getdents_exit;
-	s->progs[1].link = &obj->links.handle_getdents_exit;
+	s->progs[1].prog = &skel->progs.handle_getdents_exit;
+	s->progs[1].link = &skel->links.handle_getdents_exit;
 
 	s->progs[2].name = "handle_getdents_patch";
-	s->progs[2].prog = &obj->progs.handle_getdents_patch;
-	s->progs[2].link = &obj->links.handle_getdents_patch;
+	s->progs[2].prog = &skel->progs.handle_getdents_patch;
+	s->progs[2].link = &skel->links.handle_getdents_patch;
 
 	s->data = pidhide__elf_bytes(&s->data_sz);
 
-	obj->skeleton = s;
+	skel->skeleton = s;
 	return 0;
 err:
-	bpf_object__destroy_skeleton(s);
+	bpf_skelect__destroy_skeleton(s);
 	return err;
 }
 
@@ -36720,7 +36720,7 @@ static inline const void *pidhide__elf_bytes(size_t *sz)
 }
 
 #ifdef __cplusplus
-struct pidhide *pidhide::open(const struct bpf_object_open_opts *opts) { return pidhide__open_opts(opts); }
+struct pidhide *pidhide::open(const struct bpf_skelect_open_opts *opts) { return pidhide__open_opts(opts); }
 struct pidhide *pidhide::open_and_load() { return pidhide__open_and_load(); }
 int pidhide::load(struct pidhide *skel) { return pidhide__load(skel); }
 int pidhide::attach(struct pidhide *skel) { return pidhide__attach(skel); }
