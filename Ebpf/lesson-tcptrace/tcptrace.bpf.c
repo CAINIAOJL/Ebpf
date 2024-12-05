@@ -194,7 +194,9 @@ int trace_connect_v6_return(struct pt_regs *ctx) {
 }
 //追踪状态改变，每次状态改变，都会调用这个函数
 //问题
-int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
+int trace_tcp_set_state_entry(struct pt_regs *ctx) {
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+    u8 state = BPF_CORE_READ(sk, __sk_common.skc_state);
     if (state != TCP_ESTABLISHED && state != TCP_CLOSE) {
         return 0;
     }
@@ -219,26 +221,26 @@ int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
             return 0;
         }
         //ipv4事件
-        struct tcp_ipv4_event_t *ipv4_event;
+        struct tcp_ipv4_event_t ipv4_event;
         //使用ringbuffer保存数据
-        ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
-        if(!ipv4_event) {
-            return 0;
-        }
-        ipv4_event->pid = p->pid >> 32;
+        //ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
+        //if(!ipv4_event) {
+            //return 0;
+        //}
+        ipv4_event.pid = p->pid >> 32;
         for (int i = 0; i < TASK_COMM_LEN; i++) {
-            ipv4_event->comm[i] = p->comm[i];
+            ipv4_event.comm[i] = p->comm[i];
         }
-        ipv4_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-        ipv4_event->saddr = tuple.saddr;
-        ipv4_event->daddr = tuple.daddr;
-        ipv4_event->sport = bpf_ntohs(tuple.sport);
-        ipv4_event->dport = bpf_ntohs(tuple.dport);
-        ipv4_event->netns = tuple.netns;
-        ipv4_event->ip = ipver;
-        ipv4_event->type = TCP_EVENT_TYPE_CONNECT;
+        ipv4_event.ts_ns = bpf_ktime_get_ns(); //时间戳
+        ipv4_event.saddr = tuple.saddr;
+        ipv4_event.daddr = tuple.daddr;
+        ipv4_event.sport = bpf_ntohs(tuple.sport);
+        ipv4_event.dport = bpf_ntohs(tuple.dport);
+        ipv4_event.netns = tuple.netns;
+        ipv4_event.ip = ipver;
+        ipv4_event.type = TCP_EVENT_TYPE_CONNECT;
 
-        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(*ipv4_event), 0);
+        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(ipv4_event), 0);
         bpf_map_delete_elem(&tuple_ipv4_map, &tuple);
     } else if (check_family(sk, AF_INET6)) {
         ipver = 6;
@@ -258,35 +260,35 @@ int trace_tcp_set_state_entry(struct pt_regs *ctx, struct sock* sk, int state) {
             return 0;
         }
         //ipv6事件
-        struct tcp_ipv6_event_t *ipv6_event;
-        ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(*ipv6_event), 0);
-        if(!ipv6_event) {
-            return 0;
-        }
+        struct tcp_ipv6_event_t ipv6_event;
+        //ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(*ipv6_event), 0);
+        //if(!ipv6_event) {
+            //return 0;
+        //}
         for(int i = 0; i < TASK_COMM_LEN; i++) {
-            ipv6_event->comm[i] = p->comm[i];
+            ipv6_event.comm[i] = p->comm[i];
         }
-        ipv6_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-        ipv6_event->saddr = tuple.saddr;
-        ipv6_event->daddr = tuple.daddr;
-        ipv6_event->sport = bpf_ntohs(tuple.sport);
-        ipv6_event->dport = bpf_ntohs(tuple.dport);
-        ipv6_event->netns = tuple.netns;
-        ipv6_event->ip = ipver;
-        ipv6_event->type = TCP_EVENT_TYPE_CONNECT;
-        ipv6_event->pid = p->pid >> 32;
+        ipv6_event.ts_ns = bpf_ktime_get_ns(); //时间戳
+        ipv6_event.saddr = tuple.saddr;
+        ipv6_event.daddr = tuple.daddr;
+        ipv6_event.sport = bpf_ntohs(tuple.sport);
+        ipv6_event.dport = bpf_ntohs(tuple.dport);
+        ipv6_event.netns = tuple.netns;
+        ipv6_event.ip = ipver;
+        ipv6_event.type = TCP_EVENT_TYPE_CONNECT;
+        ipv6_event.pid = p->pid >> 32;
 
-        bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(*ipv6_event), 0);
+        bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(ipv6_event), 0);
         bpf_map_delete_elem(&tuple_ipv6_map, &tuple);
     }
 
     return 0;
 }
 
-int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
+int trace_close_entry(struct pt_regs *ctx) {
     //过滤操作
     //。。。。。。
-
+    struct sock *sk = (struct sock*)PT_REGS_PARM1(ctx);
     u64 pid = bpf_get_current_pid_tgid();
 
     u16 family =BPF_CORE_READ(sk, __sk_common.skc_family);
@@ -304,23 +306,23 @@ int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
         if(!read_ipv4_tuple(&tuple, sk)) {
             return 0;
         }
-        struct tcp_ipv4_event_t *ipv4_event;
-        ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
-        if(!ipv4_event) {
-            return 0;
-        }
-        ipv4_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-        ipv4_event->saddr = tuple.saddr;
-        ipv4_event->daddr = tuple.daddr;
-        ipv4_event->sport = bpf_ntohs(tuple.sport);
-        ipv4_event->dport = bpf_ntohs(tuple.dport);
-        ipv4_event->netns = tuple.netns;
-        ipv4_event->ip = ipver;
-        ipv4_event->type = TCP_EVENT_TYPE_CLOSE;
-        ipv4_event->pid = pid >> 32;
-        bpf_get_current_comm(&ipv4_event->comm, sizeof(ipv4_event->comm));
+        struct tcp_ipv4_event_t ipv4_event;
+        //ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
+        //if(!ipv4_event) {
+            //return 0;
+        //}
+        ipv4_event.ts_ns = bpf_ktime_get_ns(); //时间戳
+        ipv4_event.saddr = tuple.saddr;
+        ipv4_event.daddr = tuple.daddr;
+        ipv4_event.sport = bpf_ntohs(tuple.sport);
+        ipv4_event.dport = bpf_ntohs(tuple.dport);
+        ipv4_event.netns = tuple.netns;
+        ipv4_event.ip = ipver;
+        ipv4_event.type = TCP_EVENT_TYPE_CLOSE;
+        ipv4_event.pid = pid >> 32;
+        bpf_get_current_comm(&ipv4_event.comm, sizeof(ipv4_event.comm));
 
-        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(*ipv4_event), 0);
+        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(ipv4_event), 0);
         
     } else if (check_family(sk, AF_INET6)) {
             ipver = 6;
@@ -328,23 +330,23 @@ int trace_close_entry(struct pt_regs *ctx, struct sock *sk) {
             if(!read_ipv6_tuple(&tuple, sk)) {
                 return 0;
             }
-            struct tcp_ipv6_event_t *ipv6_event;
-            ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(ipv6_event), 0);
-            if(!ipv6_event) {
-                return 0;
-            }
-            ipv6_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-            ipv6_event->saddr = tuple.saddr;
-            ipv6_event->daddr = tuple.daddr;
-            ipv6_event->sport = bpf_ntohs(tuple.sport);
-            ipv6_event->dport = bpf_ntohs(tuple.dport);
-            ipv6_event->netns = tuple.netns;
-            ipv6_event->ip = ipver;
-            ipv6_event->type = TCP_EVENT_TYPE_CLOSE;
-            ipv6_event->pid = pid >> 32;
-            bpf_get_current_comm(&ipv6_event->comm, sizeof(ipv6_event->comm));
+            struct tcp_ipv6_event_t ipv6_event;
+            //ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(ipv6_event), 0);
+            //if(!ipv6_event) {
+                //return 0;
+            //}
+            ipv6_event.ts_ns = bpf_ktime_get_ns(); //时间戳
+            ipv6_event.saddr = tuple.saddr;
+            ipv6_event.daddr = tuple.daddr;
+            ipv6_event.sport = bpf_ntohs(tuple.sport);
+            ipv6_event.dport = bpf_ntohs(tuple.dport);
+            ipv6_event.netns = tuple.netns;
+            ipv6_event.ip = ipver;
+            ipv6_event.type = TCP_EVENT_TYPE_CLOSE;
+            ipv6_event.pid = pid >> 32;
+            bpf_get_current_comm(&ipv6_event.comm, sizeof(ipv6_event.comm));
 
-            bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(*ipv6_event), 0);
+            bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(ipv6_event), 0);
     }
     return 0;
 }
@@ -372,55 +374,69 @@ int trace_accept_return(struct pt_regs *ctx) {
 
     if(check_family(newsock, AF_INET)) {
         ipver = 4;
-        struct tcp_ipv4_event_t *ipv4_event;
-        ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
-        
-        ipv4_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-        ipv4_event->type = TCP_EVENT_TYPE_ACCEPT;
-        ipv4_event->pid = pid >> 32;
-        ipv4_event->ip = ipver;
-        ipv4_event->netns = net_ns_inum;
+        struct tcp_ipv4_event_t ipv4_event;
+        //ipv4_event = bpf_ringbuf_reserve(&rb_ipv4, sizeof(*ipv4_event), 0);
+        //if(!ipv4_event) {
+            //bpf_ringbuf_discard(ipv4_event, 0);
+            //return 0;
+        //}
+        ipv4_event.ts_ns = bpf_ktime_get_ns(); //时间戳
+        ipv4_event.type = TCP_EVENT_TYPE_ACCEPT;
+        ipv4_event.pid = pid >> 32;
+        ipv4_event.ip = ipver;
+        ipv4_event.netns = net_ns_inum;
 
-        ipv4_event->saddr = BPF_CORE_READ(newsock, __sk_common.skc_rcv_saddr);
-        ipv4_event->daddr = BPF_CORE_READ(newsock, __sk_common.skc_daddr);
+        ipv4_event.saddr = BPF_CORE_READ(newsock, __sk_common.skc_rcv_saddr);
+        ipv4_event.daddr = BPF_CORE_READ(newsock, __sk_common.skc_daddr);
 
-        ipv4_event->sport = lport;
-        ipv4_event->daddr = bpf_ntohs(dport);
+        ipv4_event.sport = lport;
+        ipv4_event.daddr = bpf_ntohs(dport);
 
-        bpf_get_current_comm(&ipv4_event->comm, sizeof(ipv4_event->comm));
+        bpf_get_current_comm(&ipv4_event.comm, sizeof(ipv4_event.comm));
 
-        if(ipv4_event->saddr == 0 || ipv4_event->daddr == 0 || ipv4_event->sport == 0 || ipv4_event->dport == 0) {
+        if(ipv4_event.saddr == 0 || ipv4_event.daddr == 0 || ipv4_event.sport == 0 || ipv4_event.dport == 0) {
+            //bpf_ringbuf_discard(&rb_ipv4, 0);
             return 0;
         }
 
-        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(*ipv4_event), 0);
-    } else if (check_family(newsock, AF_INET6)) {
-            ipver = 6;
-            struct tcp_ipv6_event_t *ipv6_event;
-            ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(*ipv6_event), 0);
-            if(!ipv6_event) {
-                return 0;
-            }
-            ipv6_event->ts_ns = bpf_ktime_get_ns(); //时间戳
-            ipv6_event->type = TCP_EVENT_TYPE_ACCEPT;
-            ipv6_event->pid = pid >> 32;
-            ipv6_event->ip = ipver;
-            ipv6_event->netns = net_ns_inum;
-
-            bpf_probe_read_kernel(&ipv6_event->saddr, sizeof(ipv6_event->saddr), newsock->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
-            bpf_probe_read_kernel(&ipv6_event->daddr, sizeof(ipv6_event->daddr), newsock->__sk_common.skc_v6_daddr.in6_u.u6_addr32);
-
-            ipv6_event->sport = lport;
-            ipv6_event->daddr = bpf_ntohs(dport);
-
-            bpf_get_current_comm(&ipv6_event->comm, sizeof(ipv6_event->comm));
-
-            if(ipv6_event->saddr == 0 || ipv6_event->daddr == 0 || ipv6_event->sport == 0 || ipv6_event->dport == 0) {
-                return 0;
-            }
-
-            bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(*ipv6_event), 0);
+        //bpf_ringbuf_submit(ipv4_event, 0);
+        bpf_ringbuf_output(&rb_ipv4, &ipv4_event, sizeof(ipv4_event), 0);
     }
+    if (check_family(newsock, AF_INET6)) {
+        ipver = 6;
+        struct tcp_ipv6_event_t ipv6_event;
+        //ipv6_event = bpf_ringbuf_reserve(&rb_ipv6, sizeof(*ipv6_event), 0);
+        //if(!ipv6_event) {
+            //bpf_ringbuf_discard(ipv6_event, 0);
+            //eturn 0;
+        //}
+        ipv6_event.ts_ns = bpf_ktime_get_ns();
+        ipv6_event.type = TCP_EVENT_TYPE_ACCEPT;
+        ipv6_event.pid = pid >> 32;
+        ipv6_event.ip = ipver;
+        ipv6_event.netns = net_ns_inum;
+
+        bpf_probe_read_kernel(&ipv6_event.saddr, sizeof(ipv6_event.saddr), newsock->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+        bpf_probe_read_kernel(&ipv6_event.daddr, sizeof(ipv6_event.daddr), newsock->__sk_common.skc_v6_daddr.in6_u.u6_addr32);
+        //ipv6_event->saddr = (unsigned __int128)BPF_CORE_READ(newsock, __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+        //ipv6_event->daddr = (unsigned __int128)BPF_CORE_READ(newsock, __sk_common.skc_v6_daddr.in6_u.u6_addr32);
+
+        ipv6_event.sport = lport;
+        ipv6_event.daddr = bpf_ntohs(dport);
+
+        bpf_get_current_comm(&ipv6_event.comm, sizeof(ipv6_event.comm));
+
+        if(ipv6_event.saddr == 0 || ipv6_event.daddr == 0 || ipv6_event.sport == 0 || ipv6_event.dport == 0) {
+            //bpf_ringbuf_discard(&rb_ipv6, 0);
+            return 0;
+        }
+        bpf_ringbuf_output(&rb_ipv6, &ipv6_event, sizeof(ipv6_event), 0);
+        //bpf_ringbuf_submit(ipv6_event, 0);
+        //bpf_ringbuf_output(&rb_ipv6, ipv6_event, sizeof(*ipv6_event), 0);
+        //bpf_ringbuf_discard(&rb_ipv6, 0);
+    }
+
+    return 0;
 }
 //int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 SEC("kprobe/tcp_v4_connect")
@@ -446,18 +462,18 @@ int BPF_KRETPROBE(kprobe_tcp_v6_connect_return) {
 
 //static inline void tcp_set_state(struct sock *sk, int state)
 SEC("kprobe/tcp_set_state")
-int BPF_KPROBE(kprobe_tcp_set_state_entry, struct sock *sock, int state) {
-    return trace_tcp_set_state_entry(ctx, sock, state);
+int BPF_KPROBE(tcp_set_state_entry) {
+    return trace_tcp_set_state_entry(ctx);
 }
 
 //void tcp_close(struct sock *sk, long timeout)
 SEC("kprobe/tcp_close")
-int BPF_KPROBE(kprobe_tcp_close_entry, struct sock *sk) {
-    return trace_close_entry(ctx, sk);
+int BPF_KPROBE(tcp_close_entry) {
+    return trace_close_entry(ctx);
 }
 
 //struct sock *inet_csk_accept(struct sock *sk, int flags, int *err)
 SEC("kretprobe/inet_csk_accept")
-int BPF_KRETPROBE(kprobe_inet_csk_accept_return) {
+int BPF_KRETPROBE(inet_csk_accept_return) {
     return trace_accept_return(ctx);
 }

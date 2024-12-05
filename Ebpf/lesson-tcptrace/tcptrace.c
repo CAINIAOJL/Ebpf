@@ -50,9 +50,9 @@ struct env {
 
 static const struct argp_option opts[] = {
     {"timestamp", 't', NULL, 0, "Include timestamp on output"},
-    {"ipv4", '4', "IPV4", 0, "show IPv4 connections only"},
+    {"ipv4", 4, "IPV4", 0, "show IPv4 connections only"},
     {"verbose", 'v', NULL, 0, "verbose debug output"},
-    {"ipv6", '6', "IPV6", 0, "show IPv6 connections only"},
+    {"ipv6", 6, "IPV6", 0, "show IPv6 connections only"},
     {"pid", 'p', "PID", 0, "trace this PID only"},
     {},
 };
@@ -76,11 +76,11 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state) {
             env.netns = true;
             break;
 
-        case '4':
+        case 4:
             env.ipv4 = true;
             break;
         
-        case '6':
+        case 6:
             env.ipv6 = true;
             break;
         
@@ -152,7 +152,7 @@ static void print_ipv4_event(void *ctx, void *data, size_t data_sz) {
             start_ns = event->ts_ns;
         }
         if(env.verbose) {
-            printf("%-14ld", event->ts_ns - start_ns);
+            printf("%-14lld", event->ts_ns - start_ns);
         } else {
             printf("%-9.3f", ((event->ts_ns - start_ns) / 1000000000.0));
         }
@@ -200,7 +200,7 @@ static void print_ipv6_event(void *ctx, void *data, size_t data_sz) {
             start_ns = event->ts_ns;
         }
         if(env.verbose) {
-            printf("%-14ld", event->ts_ns - start_ns);
+            printf("%-14lld", event->ts_ns - start_ns);
         } else {
             printf("%-9.3f", ((event->ts_ns - start_ns) / 1000000000.0));
         }
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
     int err;
     //LIBBPF_OPTS(bpf_object_open_opts, open_opts);
     static const struct argp argp = {
-        .args_doc = argp_program_doc,
+        .doc = argp_program_doc,
         .options = opts,
         .parser = parse_arg,
     };
@@ -343,23 +343,23 @@ int main(int argc, char** argv) {
         }
     }
 
-    skel->links.kprobe_tcp_set_state_entry = 
-        bpf_program__attach_kprobe(skel->progs.kprobe_tcp_set_state_entry, false, "tcp_set_state");
-    if(!skel->links.kprobe_tcp_set_state_entry) {    
+    skel->links.tcp_set_state_entry = 
+        bpf_program__attach_kprobe(skel->progs.tcp_set_state_entry, false, "tcp_set_state");
+    if(!skel->links.tcp_set_state_entry) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_set_state_entry", -errno);
         return -1;
     }
 
-    skel->links.kprobe_tcp_close_entry = 
-    bpf_program__attach_kprobe(skel->progs.kprobe_tcp_close_entry, false, "tcp_close");
-    if(!skel->links.kprobe_tcp_close_entry) {    
+    skel->links.tcp_close_entry = 
+    bpf_program__attach_kprobe(skel->progs.tcp_close_entry, false, "tcp_close");
+    if(!skel->links.tcp_close_entry) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_close_entry", -errno);
         return -1;
     }
 
-    skel->links.kprobe_inet_csk_accept_return = 
-    bpf_program__attach_kprobe(skel->progs.kprobe_inet_csk_accept_return, true, "inet_csk_accept");
-    if(!skel->links.kprobe_inet_csk_accept_return) {    
+    skel->links.inet_csk_accept_return = 
+    bpf_program__attach_kprobe(skel->progs.inet_csk_accept_return, true, "inet_csk_accept");
+    if(!skel->links.inet_csk_accept_return) {    
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_inet_csk_accept_return", -errno);
         return -1;
     }
