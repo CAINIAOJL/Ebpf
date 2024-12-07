@@ -48,6 +48,12 @@ struct {
 	__uint(max_entries, 256 * 1024);
 } rb_ipv6 SEC(".maps");
 
+const volatile pid_t target_pid = 0;
+
+static __always_inline bool filter_pid(pid_t pid) {
+    return pid == target_pid;
+}
+
 static int read_ipv4_tuple(struct ipv4_tuple_t *tuple, struct sock *skp) {
     u32 net_ns_inum = 0;
     //u32 saddr = skp->__sk_common.skc_rcv_saddr;
@@ -113,9 +119,11 @@ static bool check_family(struct sock *sk, u16 expected_family) {
 //connect 入口
 int trace_connect_v4_entry(struct pt_regs *ctx, struct sock *sk) {
     //过滤操作
-    //。。。。。。
+    
     u64 pid = bpf_get_current_pid_tgid();
-
+    if(!filter_pid(pid >> 32)) {
+        return 0;
+    }
     u16 family = BPF_CORE_READ(sk, __sk_common.skc_family);
     //更新
     bpf_map_update_elem(&connectsock, &pid, &sk, BPF_ANY);
@@ -126,6 +134,10 @@ int trace_connect_v4_return(struct pt_regs *ctx) {
     int ret = PT_REGS_RC(ctx);
 
     u64 pid = bpf_get_current_pid_tgid();
+    if(!filter_pid(pid >> 32)) {
+        return 0;
+    }
+
     struct sock ** skpp;
     skpp = bpf_map_lookup_elem(&connectsock, &pid);
     if (skpp == NULL) {
@@ -154,9 +166,11 @@ int trace_connect_v4_return(struct pt_regs *ctx) {
 
 int trace_connect_v6_entry(struct pt_regs *ctx, struct sock *sk) { 
     //过滤操作
-    //。。。。。。
 
     u64 pid = bpf_get_current_pid_tgid();
+    if(!filter_pid(pid >> 32)) { 
+        return 0;
+    }
 
     u16 family =sk->__sk_common.skc_family;
 
@@ -168,6 +182,9 @@ int trace_connect_v6_return(struct pt_regs *ctx) {
     int ret = PT_REGS_RC(ctx);
 
     u64 pid = bpf_get_current_pid_tgid();
+    if(!filter_pid(pid >> 32)) {
+        return 0;
+    }
     struct sock ** skpp = bpf_map_lookup_elem(&connectsock, &pid);
     if (skpp == NULL) {
         return 0;
@@ -195,6 +212,11 @@ int trace_connect_v6_return(struct pt_regs *ctx) {
 //追踪状态改变，每次状态改变，都会调用这个函数
 //问题
 int trace_tcp_set_state_entry(struct pt_regs *ctx) {
+
+    if(!filter_pid(bpf_get_current_pid_tgid() >> 32)) {
+        return 0;
+    }
+
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
     u8 state = BPF_CORE_READ(sk, __sk_common.skc_state);
     if (state != TCP_ESTABLISHED && state != TCP_CLOSE) {
@@ -287,9 +309,12 @@ int trace_tcp_set_state_entry(struct pt_regs *ctx) {
 
 int trace_close_entry(struct pt_regs *ctx) {
     //过滤操作
-    //。。。。。。
+
     struct sock *sk = (struct sock*)PT_REGS_PARM1(ctx);
     u64 pid = bpf_get_current_pid_tgid();
+    if(!filter_pid(pid >> 32)) {
+        return 0;
+    }
 
     u16 family =BPF_CORE_READ(sk, __sk_common.skc_family);
 
@@ -352,11 +377,12 @@ int trace_close_entry(struct pt_regs *ctx) {
 }
 
 int trace_accept_return(struct pt_regs *ctx) {
-    //过滤操作
-    //。。。。。。
 
     struct sock *newsock = (struct sock*)PT_REGS_RC(ctx);
     u64 pid = bpf_get_current_pid_tgid();
+    if(!filter_pid(pid >> 32)) {
+        return 0;
+    }
     
     if(newsock == NULL) {
         return 0;

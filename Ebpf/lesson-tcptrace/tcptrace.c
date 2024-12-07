@@ -18,7 +18,7 @@
 #define INVALID_PID -1
 #define warn(...) fprintf(stderr, __VA_ARGS__)
 
-const char *argp_program_version = "tcptrace 1.0";
+const char *argp_program_version = "tcptrace 2.0";
 const char *argp_program_bug_address = "https://github.com/iovisor/bcc/tree/master/libbpf-tools";
 const char argp_program_doc[] =
 "tcpv4tracer   Trace TCP connections."
@@ -50,10 +50,11 @@ struct env {
 
 static const struct argp_option opts[] = {
     {"timestamp", 't', NULL, 0, "Include timestamp on output"},
-    {"ipv4", 4, "IPV4", 0, "show IPv4 connections only"},
+    {"ipv4", '4', "IPV4", 0, "show IPv4 connections only"},
     {"verbose", 'v', NULL, 0, "verbose debug output"},
-    {"ipv6", 6, "IPV6", 0, "show IPv6 connections only"},
+    {"ipv6", '6', "IPV6", 0, "show IPv6 connections only"},
     {"pid", 'p', "PID", 0, "trace this PID only"},
+    {"netns", 'n', "NETNS", 0, "trace show the netns of the connection"},
     {},
 };
 
@@ -76,11 +77,11 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state) {
             env.netns = true;
             break;
 
-        case 4:
+        case '4':
             env.ipv4 = true;
             break;
         
-        case 6:
+        case '6':
             env.ipv6 = true;
             break;
         
@@ -270,6 +271,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Failed to open BPF skelect: %s\n", strerror(-err));
         return 1;
     }
+
+    skel->rodata->
 
     err = tcptrace__load(skel);
     if(err) {
