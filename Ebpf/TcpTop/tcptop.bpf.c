@@ -49,7 +49,7 @@ struct {
 
 const volatile int target_pid = 0;
 
-static  __always_inline bool __filter (u32 pid, u32 target) {
+static  bool __filter (pid_t pid, pid_t target) {
     return pid == target;
 }
 
@@ -71,8 +71,8 @@ static int tcp_sendstat(int size) {
 
     bpf_probe_read_kernel(&family, sizeof(family), &sockp->__sk_common.skc_family);
     //family = BPF_CORE_READ(sockp, __sk_common.skc_family);
-
-    if(family == AF_INET) {
+    u64 *val, zero = 0;
+    if(family == aAF_INET) {
         //ipv4
         struct ipv4_key_t ipv4_key = {
             .pid = pid
@@ -85,11 +85,17 @@ static int tcp_sendstat(int size) {
 
         ipv4_key.dport = bpf_ntohs(dport);
 
-        u64 send_bytes = bpf_map_lookup_elem(&ipv4_send_bytes, &ipv4_key) + size;
-        bpf_map_elem_update(&ipv4_send_bytes, &ipv4_key, &send_bytes, BPF_ANY);
-    } else if(family == AF_INET6) {
+        val = bpf_map_lookup_elem(&ipv4_recv_bytes, &ipv4_key);
+        if (val) {
+            *val += size;
+        } else {
+            val = &zero;
+        }
+        bpf_map_update_elem(&ipv4_send_bytes, &ipv4_key, val, BPF_ANY);
+
+    } else if(family == aAF_INET6) {
         //ipv6
-        struct ipv4_key_t ipv6_key = {
+        struct ipv6_key_t ipv6_key = {
             .pid = pid
         };
         bpf_get_current_comm(&ipv6_key.name, sizeof(ipv6_key.name));
@@ -100,8 +106,13 @@ static int tcp_sendstat(int size) {
 
         ipv6_key.dport = bpf_ntohs(dport);
 
-        u64 send_bytes = bpf_map_lookup_elem(&ipv6_send_bytes, &ipv6_key) + size;
-        bpf_map_elem_update(&ipv6_send_bytes, &ipv6_key, &send_bytes, BPF_ANY);
+        val = bpf_map_lookup_elem(&ipv6_recv_bytes, &ipv6_key);
+        if (val) {
+            *val += size;
+        } else {
+            val = &zero;
+        }
+        bpf_map_update_elem(&ipv6_send_bytes, &ipv6_key, val, BPF_ANY);
     
     }   
 
@@ -110,7 +121,7 @@ static int tcp_sendstat(int size) {
 
 int tcp_send_entry(struct pt_regs *ctx, struct sock *sk) {
     u32 pid = bpf_get_current_pid_tgid() >> 32;
-    if(!filter(pid, target_pid)) {
+    if(!__filter(pid, target_pid)) {
         return 0;
     }
     /*这里使用位运算符 & 来提取返回值中的低 32 位。因为 BPF 的返回值是 64 位，所以将其与 32 位的掩码 0xffffffff 进行与运算，可以有效提取出线程组 ID (TGID)。*/
@@ -124,7 +135,7 @@ int tcp_send_entry(struct pt_regs *ctx, struct sock *sk) {
 int kprobe_tcp_cleanup_rbuf(struct pt_regs *ctx) {
 
     u32 pid = bpf_get_current_pid_tgid() >> 32;
-    if(!filter(pid, target_pid)) {
+    if(!__filter(pid, target_pid)) {
         return 0;
     }
     struct sock * sk = (struct sock *)PT_REGS_PARM1(ctx);
@@ -139,7 +150,7 @@ int kprobe_tcp_cleanup_rbuf(struct pt_regs *ctx) {
         return 0;
     }
 
-    if (family == AF_INET) {
+    if (family == aAF_INET) {
         //ipv4
         struct ipv4_key_t ipv4_key = {
             .pid = pid
@@ -159,7 +170,7 @@ int kprobe_tcp_cleanup_rbuf(struct pt_regs *ctx) {
             val = &zero;
         }
         bpf_map_update_elem(&ipv4_send_bytes, &ipv4_key, val, BPF_ANY);
-    } else if (family == AF_INET6) {
+    } else if (family == aAF_INET6) {
         //ipv6
         struct ipv6_key_t ipv6_key = {
             .pid = pid
@@ -189,7 +200,7 @@ int BPF_KPROBE(kprobe_tcp_sendmsg_entry, struct sock *sk) {
     return tcp_send_entry(ctx, sk);
 }
 
-SEC("kprobe/tcp_sendmsg")
+SEC("kretprobe/tcp_sendmsg")
 int BPF_KRETPROBE(kprobe_tcp_sendmsg_return) {
     int size = PT_REGS_RC(ctx);
     if(size > 0) {
@@ -199,12 +210,12 @@ int BPF_KRETPROBE(kprobe_tcp_sendmsg_return) {
     }
 }
 
-SEC("kprobe/tcp_sendpage")
+/*SEC("kprobe/tcp_sendpage")
 int BPF_KPROBE(kprobe_tcp_sendpage_entry, struct sock *sk) {
     return tcp_send_entry(ctx, sk);
 }
 
-SEC("probe/tcp_sendpage")
+SEC("kretprobe/tcp_sendpage")
 int BPF_KRETPROBE(kprobe_tcp_sendpage_return) {
     ssize_t size = PT_REGS_RC(ctx);
     if(size > 0) {
@@ -212,7 +223,7 @@ int BPF_KRETPROBE(kprobe_tcp_sendpage_return) {
     } else {
         return 0;
     }
-}
+}*/
 
 SEC("kprobe/tcp_cleanup_rbuf")
 int BPF_KPROBE(kprobe_tcp_cleanup_rbuf_entry) {

@@ -15,6 +15,8 @@
 
 #define warn(...) fprintf(stderr, __VA_ARGS__)
 
+#define INVALID_PID -1
+#define MAX_MATCH_SIZE 1024
 const char *argp_program_version = "tcptop 1.0";
 const char *argp_program_bug_address = "https://github.com/iovisor/bcc/tree/master/libbpf-tools";
 const char argp_program_doc[] =
@@ -108,63 +110,134 @@ static bool set_up(void) {
     return true;
 }
 
-void print_ipv4_throughput(struct bpf_map *ipv4_send_bytes_map, struct bpf_map *ipv4_recv_bytes_map) {
-    struct ipv4_key_t key, next_key;
+static void print_ipv4_throughput(struct bpf_map *ipv4_send_bytes_map, struct bpf_map *ipv4_recv_bytes_map) {
+    struct ipv4_key_t send_key, send_next_key;
+    struct ipv4_key_t recv_key, recv_next_key;
+    uint64_t send_value, recv_value;
+
+    // 初始化发送键（可能需要根据实际情况调整）
+    memset(&send_key, 0, sizeof(send_key));
+    // 初始化接收键（可能需要根据实际情况调整）
+    memset(&recv_key, 0, sizeof(recv_key));
+
+    printf("%-7s %-12s %-21s %-21s %6s %6s\n", "PID", "COMM", "LADDR", "RADDR", "RX_KB(KB)", "TX_KB(KB)");
+
+    // 打印发送数据
+    send_key = (struct ipv4_key_t){0}; // 确保从起始键开始
+    while (bpf_map_get_next_key(bpf_map__fd(ipv4_send_bytes_map), &send_key, &send_next_key) == 0) {
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv4_send_bytes_map), &send_next_key, &send_value) >= 0) {
+            char laddr[16], raddr[16];
+            inet_ntop(AF_INET, &send_next_key.saddr, laddr, sizeof(laddr));
+            inet_ntop(AF_INET, &send_next_key.daddr, raddr, sizeof(raddr));
+
+            printf("%-7d %-12.12s %-21s %-21s %6lu %6lu\n",
+                   send_next_key.pid, send_next_key.name, 
+                   laddr, raddr, 
+                   0, // 接收数据在这里不适用
+                   send_value / 1024);
+
+            // 根据需要删除键
+            // bpf_map_delete_elem(bpf_map__fd(ipv4_send_bytes_map), &send_next_key);
+        }
+        send_key = send_next_key;
+    }
+
+    // 打印接收数据
+    recv_key = (struct ipv4_key_t){0}; // 确保从起始键开始
+    while (bpf_map_get_next_key(bpf_map__fd(ipv4_recv_bytes_map), &recv_key, &recv_next_key) == 0) {
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv4_recv_bytes_map), &recv_next_key, &recv_value) >= 0) {
+            char laddr[16], raddr[16];
+            inet_ntop(AF_INET, &recv_next_key.saddr, laddr, sizeof(laddr));
+            inet_ntop(AF_INET, &recv_next_key.daddr, raddr, sizeof(raddr));
+
+            printf("%-7d %-12.12s %-21s %-21s %6lu %6lu\n",
+                   recv_next_key.pid, recv_next_key.name, 
+                   laddr, raddr, 
+                   recv_value / 1024, // 接收数据
+                   0); // 发送数据在这里不适用
+
+            // 根据需要删除键
+            // bpf_map_delete_elem(bpf_map__fd(ipv4_recv_bytes_map), &recv_next_key);
+        }
+        recv_key = recv_next_key;
+    }
+}
+
+/*static void print_ipv4_throughput(struct bpf_map *ipv4_send_bytes_map, struct bpf_map *ipv4_recv_bytes_map) {
+    struct ipv4_key_t send_key, send_next_key;
+    send_key.pid = 0;
+    send_key.name[0] = '\0';
+    send_key.saddr = 0;
+    send_key.daddr = 0;
+    send_key.dport = 0;
+    send_key.lport = 0;
+    struct ipv4_key_t recv_key, recv_next_key;
     uint64_t value, send_value, recv_value;
 
     printf("%-7s %-12s %-21s %-21s %6s %6s\n", "PID", "COMM", "LADDR", "RADDR", "RX_KB(KB)", "TX_KB(KB)");
 
-    while (bpf_map_get_next_key(ipv4_send_bytes_map, &key, &next_key) == 0) {
-        if (bpf_map_lookup_elem(ipv4_send_bytes_map, &next_key, &send_value) < 0)
+    while (bpf_map_get_next_key(bpf_map__fd(ipv4_send_bytes_map), &send_key, &send_next_key) == 0
+            || bpf_map_get_next_key(bpf_map__fd(ipv4_recv_bytes_map), &recv_key, &recv_next_key) == 0) {
+        printf("find key");
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv4_send_bytes_map), &send_next_key, &send_value) < 0) {
             send_value = 0;
+            printf("no data");
+        }
 
-        if (bpf_map_lookup_elem(ipv4_recv_bytes_map, &next_key, &recv_value) < 0)
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv4_recv_bytes_map), &recv_next_key, &recv_value) < 0) {
             recv_value = 0;
-
+            printf("no data");
+        }
+        
         char laddr[16], raddr[16];
-        inet_ntop(AF_INET, &next_key.saddr, laddr, sizeof(laddr));
-        inet_ntop(AF_INET, &next_key.daddr, raddr, sizeof(raddr));
+        inet_ntop(AF_INET, &recv_next_key.saddr, laddr, sizeof(laddr));
+        inet_ntop(AF_INET, &recv_next_key.daddr, raddr, sizeof(raddr));
 
         printf("%-7d %-12.12s %-21s %-21s %6lu %6lu\n",
-               next_key.pid, next_key.name, 
+               recv_next_key.pid, recv_next_key.name, 
                laddr, raddr, 
                recv_value / 1024, send_value / 1024);
 
         // Delete the key from the map
-        bpf_map_delete_elem(ipv4_send_bytes_map, &next_key);
-        bpf_map_delete_elem(ipv4_recv_bytes_map, &next_key);
+        bpf_map_delete_elem(bpf_map__fd(ipv4_send_bytes_map), &send_next_key);
+        bpf_map_delete_elem(bpf_map__fd(ipv4_recv_bytes_map), &recv_next_key);
 
-        key = next_key;
+        send_key = send_next_key;
+        recv_key = recv_next_key;
     }
-}
+}*/
 
-void print_ipv6_throughput(struct bpf_map *ipv6_send_bytes_map, struct bpf_map *ipv6_recv_bytes_map) {
-    struct ipv6_key_t key, next_key;
+static void print_ipv6_throughput(struct bpf_map *ipv6_send_bytes_map, struct bpf_map *ipv6_recv_bytes_map) {
+    struct ipv6_key_t send_key, send_next_key;
+    struct ipv6_key_t recv_key, recv_next_key;
     uint64_t value, send_value, recv_value;
 
     printf("\n%-7s %-12s %-32s %-32s %6s %6s\n", "PID", "COMM", "LADDR6", "RADDR6", "RX_KB", "TX_KB");
 
-    while (bpf_map_get_next_key(ipv6_send_bytes_map, &key, &next_key) == 0) {
-        if (bpf_map_lookup_elem(ipv6_send_bytes_map, &next_key, &send_value) < 0)
+    while (bpf_map_get_next_key(bpf_map__fd(ipv6_send_bytes_map), &send_key, &send_next_key) == 0 
+            && bpf_map_get_next_key(bpf_map__fd(ipv6_recv_bytes_map), &recv_key, &recv_next_key) == 0) {
+        printf("find key");
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv6_send_bytes_map), &send_next_key, &send_value) < 0)
             send_value = 0;
 
-        if (bpf_map_lookup_elem(ipv6_recv_bytes_map, &next_key, &recv_value) < 0)
+        if (bpf_map_lookup_elem(bpf_map__fd(ipv6_recv_bytes_map), &recv_next_key, &recv_value) < 0)
             recv_value = 0;
 
         char laddr6[40], raddr6[40];
-        inet_ntop(AF_INET6, &next_key.saddr, laddr6, sizeof(laddr6));
-        inet_ntop(AF_INET6, &next_key.daddr, raddr6, sizeof(raddr6));
+        inet_ntop(AF_INET6, &send_next_key.saddr, laddr6, sizeof(laddr6));
+        inet_ntop(AF_INET6, &send_next_key.daddr, raddr6, sizeof(raddr6));
 
         printf("%-7d %-12.12s %-32s %-32s %6lu %6lu\n",
-               next_key.pid, next_key.name, 
+               send_next_key.pid, send_next_key.name, 
                laddr6, raddr6, 
                recv_value / 1024, send_value / 1024);
 
         // Delete the key from the map
-        bpf_map_delete_elem(ipv6_send_bytes_map, &next_key);
-        bpf_map_delete_elem(ipv6_recv_bytes_map, &next_key);
+        bpf_map_delete_elem(bpf_map__fd(ipv6_send_bytes_map), &send_next_key);
+        bpf_map_delete_elem(bpf_map__fd(ipv6_recv_bytes_map), &recv_next_key);
 
-        key = next_key;
+        send_key = send_next_key;
+        recv_key = recv_next_key;
     }
 }
 
@@ -225,7 +298,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    skel->links.kprobe_tcp_sendpage_entry = 
+    /*skel->links.kprobe_tcp_sendpage_entry = 
     bpf_program__attach_kprobe(skel->progs.kprobe_tcp_sendpage_entry, false, "tcp_sendapge");
 
     if(!skel->links.kprobe_tcp_sendpage_entry) {
@@ -239,7 +312,7 @@ int main(int argc, char **argv) {
     if(!skel->links.kprobe_tcp_sendpage_return) {
         warn("(%s)Failed to attach kprobe: %d\n", "kprobe_tcp_sendpage_return", -errno);
         return -1;
-    }
+    }*/
 
     skel->links.kprobe_tcp_cleanup_rbuf_entry = 
     bpf_program__attach_kprobe(skel->progs.kprobe_tcp_cleanup_rbuf_entry, false, "tcp_cleanup_rbuf");
@@ -261,6 +334,7 @@ int main(int argc, char **argv) {
     struct bpf_map *ipv6_send_bytes_map, *ipv6_recv_bytes_map;
 
     // Assume maps are loaded and available
+    struct bpf_object *obj = skel->obj;
     ipv4_send_bytes_map = bpf_object__find_map_by_name(obj, "ipv4_send_bytes");
     ipv4_recv_bytes_map = bpf_object__find_map_by_name(obj, "ipv4_recv_bytes");
     ipv6_send_bytes_map = bpf_object__find_map_by_name(obj, "ipv6_send_bytes");
@@ -272,10 +346,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    //printf("success to find maps");
 
     while (!exiting)
     {
-        sleep(1);
+        sleep(10);
         if(env.ipv4) {
             print_ipv4_throughput(ipv4_send_bytes_map, ipv4_recv_bytes_map);
         } else if(env.ipv6) {
@@ -287,7 +362,7 @@ int main(int argc, char **argv) {
             print_ipv6_throughput(ipv6_send_bytes_map, ipv6_recv_bytes_map);
         }
 
-        int errno = 0;
+        int errno;
         if(errno == -EINTR) {
             err = 0;
             break;
