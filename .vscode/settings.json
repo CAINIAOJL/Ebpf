@@ -57,6 +57,8 @@
         "user-ringbuf.skel.h": "c",
         "tcptop.h": "c",
         "slabratetop.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "errno.h": "c",
+        "map.bpf.h": "c"
     }
 }

@@ -10,7 +10,7 @@ struct val_t {
     __u64 count;
     __u64 size;
 };
-
+/*
 struct slab_t {
     unsigned long __page_flags;
 
@@ -86,30 +86,9 @@ typedef union {
 #include <linux/slub_def.h>
 #else
 #include <linux/slab_def.h>
-#endif
+#endif*/
 
 #define CACHE_NAME_LEN 32
-
-
-#include <bpf/bpf_helpers.h>
-#include <asm-generic/errno.h>
-
-static __always_inline void *
-bpf_map_lookup_or_try_init(void *map, const void *key, const void *init)
-{
-	void *val;
-	long err;
-
-	val = bpf_map_lookup_elem(map, key);
-	if (val)
-		return val;
-
-	err = bpf_map_update_elem(map, key, init, BPF_NOEXIST);
-	if (err && err != -EEXIST)
-		return 0;
-
-	return bpf_map_lookup_elem(map, key);
-}
 
 
 /*struct slab {

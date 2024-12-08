@@ -1,11 +1,10 @@
 #define __TARGET_ARCH_x86
 #include "vmlinux.h"
-#include "slabratetop.h"
-
 #include <bpf/bpf_core_read.h>
-#include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
+#include "map.bpf.h"
+#include "slabratetop.h"
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
@@ -24,13 +23,15 @@ struct {
 int kprobe__kmem_cache_alloc(struct pt_regs *ctx) {
     struct kmem_cache *cachep = (struct kmem_cache *)PT_REGS_PARM1(ctx);
     struct info_t info = {};
-    const char *name = cachep->name;
-    bpf_probe_read_kernel(&info.name, sizeof(info.name), name);
+    //const char *name = BPF_CORE_READ(cachep, name);
+    bpf_probe_read_kernel(&info.name, sizeof(info.name), &cachep->name);
+    //memcpy(info.name, name, sizeof(info.name));
     struct val_t *valp, zero = {};
     valp = bpf_map_lookup_or_try_init(&counts, &info, &zero);
     if(valp) {
-        valp->count++;
-        valp->size += cachep->size;
+        __sync_fetch_and_add(&valp->count, 1);
+        unsigned int sz = BPF_CORE_READ(cachep, size);
+        valp->size += sz;
     }
     return 0;
 }

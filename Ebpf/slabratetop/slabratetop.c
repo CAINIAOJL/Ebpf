@@ -24,12 +24,13 @@ const char argp_program_doc[] =
 "# USAGE: slabratetop [-h] [-r MAXROWS] [interval] [times]"
 "#"
 "# This uses in-kernel BPF maps to store cache summaries for efficiency."
-"# Licensed under the Apache License, Version 2.0 (the "License")"
+"# Licensed under the Apache License, Version 2.0 license"
 "#"
 "# 15-Oct-2016   Brendan Gregg   Created this."
 "# 23-Jan-2023   Rong Tao        Introduce kernel internal data structure and"
 "#                               functions to temporarily solve problem for"
 "#                               >=5.16(TODO: fix this workaround)";
+
 
 //排序结构体
 struct sorted_data {
@@ -41,7 +42,7 @@ struct sorted_data {
 int compare(const void *a, const void *b) {
     struct sorted_data *da = (struct sorted_data *)a;
     struct sorted_data *db = (struct sorted_data *)b;
-    return da->value.count - db->value.count;
+    return da->value.count < db->value.count;
 }
 
 static struct env {
@@ -152,7 +153,7 @@ static int print_map(struct bpf_map *counts) {
 
     int err, fd = bpf_map__fd(counts);
 
-    printf("%-32s %6s %10s","CACHE", "ALLOCS", "BYTES");
+    printf("%-32s %6s %10s\n","CACHE", "ALLOCS", "BYTES");
 
     while(!bpf_map_get_next_key(fd, &lookup_key, &next_key)) {
         err = bpf_map_lookup_elem(fd, &next_key, &value);
@@ -174,7 +175,7 @@ static int print_map(struct bpf_map *counts) {
     qsort(data_array, env.rows, sizeof(struct sorted_data), compare);
 
     for(size_t i = 0; i < env.rows; i++) {
-        printf("%-32s %6d %10d", data_array[i].key.name, data_array[i].value.count, data_array[i].value.bytes);
+        printf("%-32s %6lld %10lld\n", data_array[i].key.name, data_array[i].value.count, data_array[i].value.size);
     }
     //释放内存
     free(data_array);
@@ -240,7 +241,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to attach BPF programs: %s\n", strerror(-err));
         goto cleanup;
     }
-    printf("Tracing... Hit Ctrl-C to exit (timeval %d times %d).\n", env.interval, env.times);
+    printf("Tracing... Hit Ctrl-C to exit (timeval %ld times %d).\n", env.interval, env.times);
 
     while (!exiting)
     {
@@ -257,7 +258,7 @@ int main(int argc, char **argv) {
     }
 
 cleanup:
-    tcptop__destroy(skel);
+    slabratetop__destroy(skel);
     return err != 0;
 
 }
