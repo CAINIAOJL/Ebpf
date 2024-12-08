@@ -55,6 +55,8 @@
         "streambuf": "c",
         "user-ringbuf.h": "c",
         "user-ringbuf.skel.h": "c",
-        "tcptop.h": "c"
+        "tcptop.h": "c",
+        "slabratetop.h": "c",
+        "time.h": "c"
     }
 }

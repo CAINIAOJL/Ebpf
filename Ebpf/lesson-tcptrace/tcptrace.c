@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    skel->rodata->
+    skel->rodata->target_pid = env.pid;
 
     err = tcptrace__load(skel);
     if(err) {
