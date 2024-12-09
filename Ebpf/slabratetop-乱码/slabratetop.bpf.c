@@ -28,11 +28,10 @@ int kprobe__kmem_cache_alloc(struct pt_regs *ctx) {
     //memcpy(info.name, name, sizeof(info.name));
     struct val_t *valp, zero = {};
     valp = bpf_map_lookup_or_try_init(&counts, &info, &zero);
-    if(valp) {
-        __sync_fetch_and_add(&valp->count, 1);
-        unsigned int sz = BPF_CORE_READ(cachep, size);
-        valp->size += sz;
-    }
+    unsigned int sz = BPF_CORE_READ(cachep, size);
+    //原子操作
+    __sync_fetch_and_add(&valp->count, 1);
+    __sync_fetch_and_add(&valp->size, sz);
     return 0;
 }
 

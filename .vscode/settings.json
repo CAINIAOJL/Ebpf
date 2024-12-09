@@ -59,6 +59,15 @@
         "slabratetop.h": "c",
         "time.h": "c",
         "errno.h": "c",
-        "map.bpf.h": "c"
+        "map.bpf.h": "c",
+        "algorithm": "c",
+        "charconv": "c",
+        "optional": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }
